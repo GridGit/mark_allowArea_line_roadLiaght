@@ -1,0 +1,698 @@
+
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>人车红绿灯</title>
+<style>
+body{margin:0;padding:0;}
+.wrap{
+    width: 
+}
+.canvas_content{
+
+	width: 700px;
+	height: 600px;
+	float: left;
+	margin: 20px;
+}
+.canvas{
+    background:#ddd;
+    position: absolute;
+}
+button{
+	border: none;
+	border-radius: 5px;
+	cursor: pointer;
+}
+.operate{
+	width: 300px;
+	margin-top: 20px;
+	float: left;
+}
+.operate div{
+	margin-top: 20px;
+	height: 40px;
+}
+.operate_title,.car_person,.bike,.tricycle,.light,.del{
+	padding-bottom: 10px;
+	border-bottom: 1px solid gray;
+}
+.operate_title button{
+	width: 70px;
+	height: 40px;
+	
+}
+.car_person button{
+	width: 70px;
+	height: 40px;
+}
+.bike button{
+	width: 80px;
+	height: 40px;
+}
+.tricycle button{
+	width: 110px;
+	height: 40px;
+}
+.light button{
+	width: 50px;
+	height: 40px;
+}
+.del button{
+	width: 70px;
+	height: 40px;
+}
+#prev{
+	background-color: rgb(24, 194, 153);
+}
+#next{
+	background-color: rgb(24, 194, 153);
+}
+#save{
+	background-color: yellow;
+}
+#draw_person{
+	background-color: rgba(255, 0, 0, 0.8);
+}
+#draw_car{
+	background-color: rgba(0, 255, 0, 0.8);
+}
+#draw_bicycle{
+	background-color: rgba(47, 18, 168, 0.8);
+}
+#draw_motorbike{
+	background-color: rgba(0, 0, 255, 0.8);
+}
+#draw_rickshaw{
+	background-color: rgba(197, 142, 40, 0.8);
+}	
+#draw_electro_tricycle{
+	background-color: rgba(36, 190, 48, 0.8);
+}
+#red_light{
+	background-color: rgba(255, 0, 0, 0.8)
+}
+#green_light{
+	background-color: rgba(0, 255, 0, 0.8)
+}
+#yellow_light{
+	background-color: rgba(	239, 221, 13, 0.8);
+}
+#black_light{
+	background-color: rgba(10, 10, 10, 0.8);
+}
+#del_last{
+	background-color: rgba(60, 60, 60, 0.8);
+}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+    <div id="canvas_content" class="canvas_content">
+        <canvas id="canvas" class="canvas" width="700" height="600" ></canvas>
+        <canvas id="canvas2" class="canvas" width="700" height="600" style="pointer-events: none;background-color: rgba(0,0,0,0);"></canvas>
+    </div>
+	
+    <div class="operate">
+	    <div class="file">
+		    <input type='file' multiple id="file_list" accept="image/*"\>
+		</div>
+        <div id="operate_title" class="operate_title">
+            <button id="prev">上一张</button>
+            <button id="next">下一张</button>
+            <button id="save">保存</button>
+        </div>
+        <div class="operate_type">     	
+        	<div class="car_person">
+        		<label>人/车：</label>
+				<button id="draw_person">人</button>
+	            <button id="draw_car">机动车</button>	                  
+			</div>
+			<div class="bike">
+				 <label>两轮车：</label>
+				 <button id="draw_bicycle">人力自行车</button>
+				 <button id="draw_motorbike">电动/摩托车</button>
+			</div>	
+			<div class="tricycle">
+				<label>三轮车：</label>
+				<button id="draw_rickshaw">人力三轮车</button>
+				<button id="draw_electro_tricycle">电动/摩托三轮车</button>
+			</div>	
+			<div class="light">
+				<label>红绿灯：</label>
+				<button id="red_light">红灯</button>
+				<button id="green_light">绿灯</button>
+				<button id="yellow_light">黄灯</button>
+				<button id="black_light">灭灯</button>
+			</div>
+			<div class="del">
+				<button id="del_last">删除框</button>
+			</div> 	 
+        </div>        
+    </div>
+</div>
+
+
+<script type="text/javascript" src='./jquery.min.js'></script>
+<script>
+;~function(){
+    // global variables
+    var canvas = document.getElementById("canvas"),
+        canvas2 = document.getElementById('canvas2'),
+        bg_img,
+        img_src = "",
+        fileInput = document.getElementById("file_list"),
+        prev_but = document.getElementById("prev"),
+        next_but = document.getElementById("next"),
+        save_but = document.getElementById("save"),
+        draw_person_but = document.getElementById("draw_person"),
+        draw_car_but = document.getElementById("draw_car"),
+        draw_bicycle_but = document.getElementById("draw_bicycle"),
+        draw_motorbike_but = document.getElementById("draw_motorbike"),
+        draw_rickshaw_but = document.getElementById('draw_rickshaw'),
+        draw_electro_tricycle_but = document.getElementById('draw_electro_tricycle'),
+        red_light_but = document.getElementById('red_light'),
+        green_light_but = document.getElementById('green_light'),
+        yellow_light_but = document.getElementById('yellow_light'),
+        black_light_but = document.getElementById('black_light'),
+
+        del_but = document.getElementById("del_last"),
+        draw_state = false;
+
+    DragRect = function(left, top, right, bottom, canvas, color = '#FF0000') {
+        this.left = left;
+        this.top = top;
+        this.right = right;
+        this.bottom = bottom;
+        this.color = color
+        this.canvas = canvas;
+        this.name = '';
+        this.type = 0;
+        this.text = '';
+        this.selected = false;
+        this.context = canvas.getContext("2d");
+    }
+
+    DragRect.prototype = {
+        paint: function() {
+            this.context.beginPath();
+            this.context.moveTo(this.left, this.top);
+            this.context.lineTo(this.right, this.top);
+            this.context.lineTo(this.right, this.bottom);
+            this.context.lineTo(this.left, this.bottom);
+            this.context.lineTo(this.left, this.top);
+            this.context.strokeStyle = this.color;
+            if (this.selected) {
+                this.context.fillStyle = this.color;
+                this.context.fill();
+            }
+            this.context.lineWith = 3;
+            this.context.stroke();
+        },
+        resize: function(mouse, delta) {
+            var ratio = 1 + delta / 15.0;
+            ratio = ratio > 0 ? ratio : 1;
+            cl = mouse.x - this.left;
+            ct = mouse.y - this.top;
+            cr = mouse.x - this.right;
+            cb = mouse.y - this.bottom;
+            this.left = mouse.x - cl * ratio;
+            this.top = mouse.y - ct * ratio;
+            this.right = mouse.x - cr * ratio;
+            this.bottom = mouse.y - cb * ratio;
+        },
+        fitCanvas: function(ratio, dx, dy) {
+            this.left = this.left / ratio + dx;
+            this.top = this.top / ratio + dy;
+            this.right = this.right / ratio + dx;
+            this.bottom = this.bottom / ratio + dy;
+        },
+        isMouseInRect: function(mouse){
+            return mouse.x > this.left && mouse.x < this.right
+                    && mouse.y > this.top && mouse.y < this.bottom;
+        }
+    }
+
+    DragImage = function(src, canvas) {
+        this.img = new Image();
+        this.img.src = src;
+        this.canvas = canvas;
+        this.context = canvas.getContext("2d");
+        this.rects = [];
+        this.currRect;
+        this.selectRect;
+        this.currColor;
+        this.currName;
+        this.currType;
+        var that = this;
+        this.img.onload = function() {
+            that.x = 0;
+            that.y = 0;
+            that.width = that.img.width;
+            that.height = that.img.height;
+            that.fitCanvas();
+            that.paint();
+        };
+    }
+
+    DragImage.prototype = {
+        paint: function(){
+            this.context.drawImage(this.img, this.x, this.y, this.width, this.height);
+
+            this.rects.forEach(function(r){
+                r.paint();
+            });
+        },
+        toggle_current_point_visiblility: function(index) {
+            this.landmarks[index].visibility = !this.landmarks[index].visibility;
+        },
+        isMouseInImage: function(mouse){
+            var out = mouse.x < this.x || mouse.y < this.y ||
+                      mouse.x >= this.x + this.width || mouse.y >= this.y + this.height;
+            return !out;
+        },
+        erase: function() {
+            this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        },
+        resize: function(mouse, delta) {
+            var ratio = 1 + delta / 15.0;
+            ratio = ratio > 0 ? ratio : 1;
+            cx = mouse.x - this.x;
+            cy = mouse.y - this.y;
+            this.x = mouse.x - cx * ratio;
+            this.y = mouse.y - cy * ratio;
+            this.width = this.width * ratio;
+            this.height = this.height * ratio;
+
+            this.rects.forEach(function(r){
+                r.resize(mouse, delta);
+            });
+        },
+        getRatio: function() {
+            if (this.img.width / this.img.height > canvas.width / canvas.height) {
+                return this.img.width / canvas.width;
+            } else {
+                return this.img.height / canvas.height;
+            }
+        },
+        fitCanvas: function() {
+            var ratio = this.getRatio();
+            var dx = 0, dy = 0;
+            if (this.img.width / this.img.height > canvas.width / canvas.height) {
+                dy = (canvas.height - this.height / ratio) / 2;
+            } else {
+                dx = (canvas.width - this.width / ratio) / 2;
+            }
+            this.width = this.width / ratio;
+            this.height = this.height / ratio;
+            this.x = dx;
+            this.y = dy;
+
+            this.rects.forEach(function(r){
+                r.fitCanvas(ratio, dx, dy);
+            });
+        },
+        get_coordinates_json_str: function(name) {
+            this.rects.sort(function(a, b){
+                return a.type - b.type;
+            });
+
+            var json = {};
+            json.name = name;
+            json.data = {};
+            json.data.person = [];
+            json.data.car = [];
+            json.data.bicycle = [];
+            json.data.motorbike = [];
+            json.data.rickshaw = [];
+            json.data.electroTricycle = [];
+            json.data.redLight = [];
+            json.data.greenLight = [];
+            json.data.yellowLight = [];
+            json.data.blackLight = [];
+
+            for (var i = 0; i < this.rects.length; i++) {
+                var t;
+                if (this.rects[i].type == 0) {
+                    t = json.data.person;
+                } else if (this.rects[i].type == 1) {
+                    t = json.data.car;
+                } else if(this.rects[i].type == 2){
+                    t = json.data.bicycle;
+                }else if(this.rects[i].type == 3){
+                    t = json.data.motorbike;
+                }else if(this.rects[i].type == 4){
+                    t = json.data.rickshaw;
+                }else if(this.rects[i].type == 5){
+                    t = json.data.electroTricycle;
+                }else if(this.rects[i].type == 6){
+                    t = json.data.redLight;
+                }else if(this.rects[i].type == 7){
+                    t = json.data.greenLight;
+                }else if(this.rects[i].type == 8){
+                    t = json.data.yellowLight;
+                }else if(this.rects[i].type == 9){
+                    t = json.data.blackLight;
+                }
+
+                t.push({
+                   left: String((this.rects[i].left - this.x) / (this.width) * this.img.width),
+                   top: String((this.rects[i].top - this.y) / (this.height) * this.img.height),
+                   right: String((this.rects[i].right - this.x) / (this.width) * this.img.width),
+                   bottom: String((this.rects[i].bottom - this.y) / (this.height) * this.img.height)
+                });
+            }
+            return JSON.stringify(json);
+        }
+    }
+
+    function loadData() {
+        var fileName = fileInput.files[file_idx].name;
+        var len = fileName.length;
+        if (fileName.slice(len - 4, len) != '.jpg'
+                && fileName.slice(len - 5, len) != '.jpeg'
+                && fileName.slice(len - 4, len) != '.png') {
+            return;
+        }
+
+        img_src = fileInput.files[file_idx].name;
+        bg_img = new DragImage(img_src, canvas);
+        bg_img.erase();
+        bg_img.paint();
+    }
+
+   
+    function saveData() {
+        if (bg_img.rects.length == 0) {
+            alert('还没有标框呢');
+            return;
+        }
+        saveCoordinates();
+    }
+
+    function saveCoordinates() {
+        var text = bg_img.get_coordinates_json_str(fileInput.files[file_idx].name);
+        var data = new Blob([text], {type: "text/plain"});
+        textFile = window.URL.createObjectURL(data);
+        var link = document.createElement('a');
+        var fileName = fileInput.files[file_idx].name + '.txt';
+        link.setAttribute('download', fileName);
+        link.href = textFile;
+        document.body.appendChild(link);
+        // wait for the link to be added to the document
+        window.requestAnimationFrame(function () {
+            var event = new MouseEvent('click');
+            link.dispatchEvent(event);
+            document.body.removeChild(link);
+        });
+    }
+
+    fileInput.addEventListener('change', function () {
+        file_idx = 0;
+        loadData();
+    });
+
+    save_but.onclick = function (e) {
+        saveData();
+    }
+    // 人 红
+    draw_person_but.onclick = function (e) {
+        draw_state = true;
+        bg_img.currColor = 'rgb(255, 0, 0)';
+        bg_img.currName = 'person';
+        bg_img.currType = 0;
+    }
+    // 机动车 绿
+    draw_car_but.onclick = function (e) {
+        draw_state = true;
+        bg_img.currColor = 'rgb(0, 255, 0)';
+        bg_img.currName = 'car';
+        bg_img.currType = 1;
+    }
+    // 自行车 紫
+    draw_bicycle_but.onclick = function (e) {
+        draw_state = true;
+        bg_img.currColor = 'rgb(47, 18, 168)';
+        bg_img.currName = 'bicycle';
+        bg_img.currType = 2;
+    }
+    // 摩托车 蓝
+    draw_motorbike_but.onclick = function(e){
+    	draw_state = true;
+    	bg_img.currColor = 'rgb(0, 0, 255)';
+    	bg_img.currName = 'motorbike';
+    	bg_img.currType = 3;
+    }
+    // 人力三轮车 橙
+    draw_rickshaw_but.onclick = function(e){
+    	draw_state = true;
+    	bg_img.currColor = 'rgb(197, 142, 40)';
+    	bg_img.currName = 'rickshaw';
+    	bg_img.currType = 4;
+    }
+    // 电动三轮车 青
+    draw_electro_tricycle_but.onclick = function(e){
+    	draw_state = true;
+    	bg_img.currColor = 'rgb(36, 190, 48)';
+    	bg_img.currName = 'electroTricycle';
+    	bg_img.currType = 5;
+    }
+    // 红灯 红
+    red_light_but.onclick = function(e){
+    	draw_state = true;
+    	bg_img.currColor ='rgb(255, 0, 0)';
+    	bg_img.currName ='redLight';
+    	bg_img.currType = 6;
+    }
+    // 绿灯 绿
+    green_light_but.onclick = function(e){
+    	draw_state = true;
+    	bg_img.currColor = 'rgb(0, 255, 0)';
+    	bg_img.currName = 'greenLight';
+    	bg_img.currType = 7;
+    }
+    // 黄灯 黄
+    yellow_light_but.onclick = function(e){
+    	draw_state = true;
+    	bg_img.currColor = 'rgb(239, 221, 13)';
+    	bg_img.currName = 'yellowLight';
+    	bg_img.currType = 8;
+    }
+    // 灭灯 黑
+    black_light_but.onclick = function(e){
+    	draw_state = true;
+    	bg_img.currColor = 'rgb(10, 10, 10)';
+    	bg_img.currName = 'blackLight';
+    	bg_img.currType = 9
+    }
+
+    del_but.onclick = function (e) {
+        for (var i = 0; i < bg_img.rects.length; i++) {
+            if (bg_img.rects[i].selected) {
+                bg_img.rects.splice(i, 1);
+                bg_img.erase();
+                bg_img.paint();
+                return;
+            }
+        }
+        bg_img.rects.pop();
+        bg_img.erase();
+        bg_img.paint();
+    }
+
+    prev_but.onclick = function(e) {
+        if (!fileInput.value) {
+            alert('没有选择标注文件');
+            return;
+        }
+        if (file_idx <= 0) {
+            alert('已经是第一张');
+            return;
+        } else {
+            // saveData();
+            --file_idx;
+            loadData();
+        }
+        // console.log(fileInput.files[file_idx]);
+    }
+
+    next_but.onclick = function(e) {
+        if (!fileInput.value) {
+            alert('没有选择标注文件');
+            return;
+        }
+        if (file_idx >= fileInput.files.length-1) {
+            alert('已经是最后一张');
+            return;
+        } else {
+            // saveData();
+            ++file_idx;
+            loadData();
+        }
+        // console.log(fileInput.files[file_idx]);
+    }
+
+    canvas.addEventListener('mousemove', function(e){
+        if(bg_img && canvas){
+            var left = e.clientX - canvas.getBoundingClientRect().left;
+            var top = e.clientY - canvas.getBoundingClientRect().top;
+            var ctx = canvas2.getContext("2d");
+            ctx.clearRect(0, 0, canvas2.width, canvas2.height);
+            // 开始绘制 标线
+            ctx.strokeStyle="#0000FF";
+            ctx.beginPath();
+            ctx.moveTo(left-canvas2.width, top);
+            ctx.lineTo(left+canvas2.width, top);
+            ctx.moveTo(left, top-canvas2.height);
+            ctx.lineTo(left, top+canvas2.height);
+            ctx.stroke();
+            ctx.closePath();
+        }
+    },false);
+
+    canvas.addEventListener( "mousedown" , function(e){
+        if (draw_state) {
+            bg_img.currRect = new DragRect(
+                e.clientX - canvas.getBoundingClientRect().left,
+                e.clientY - canvas.getBoundingClientRect().top,
+                e.clientX - canvas.getBoundingClientRect().left,
+                e.clientY - canvas.getBoundingClientRect().top,
+                canvas);
+            bg_img.currRect.color = bg_img.currColor;
+            bg_img.currRect.name = bg_img.currName;
+            bg_img.currRect.type = bg_img.currType;
+            bg_img.rects.push(bg_img.currRect);
+
+            function point_move(e) {
+                if (draw_state) {
+                    bg_img.currRect.right = e.clientX - canvas.getBoundingClientRect().left;
+                    bg_img.currRect.bottom = e.clientY - canvas.getBoundingClientRect().top;
+                    bg_img.paint();
+                }
+            }                
+            canvas.addEventListener("mousemove" , point_move, false);
+            
+            canvas.addEventListener("mouseup" , function() {
+                if (draw_state) {
+                    // adjust rect
+                    if (bg_img.currRect.left > bg_img.currRect.right) {
+                        var t = bg_img.currRect.left;
+                        bg_img.currRect.left = bg_img.currRect.right;
+                        bg_img.currRect.right = t;
+                    }
+                    if (bg_img.currRect.top > bg_img.currRect.bottom) {
+                        var t = bg_img.currRect.top;
+                        bg_img.currRect.top = bg_img.currRect.bottom;
+                        bg_img.currRect.bottom = t;
+                    }
+                    draw_state = false;
+                }
+            }, false);
+
+            canvas.addEventListener("mouseout", function(e) {
+                canvas.removeEventListener("mousemove", point_move, false);
+            }, false);
+        } else {
+            var mouse = {
+                x : e.clientX - canvas.getBoundingClientRect().left,
+                y : e.clientY - canvas.getBoundingClientRect().top
+            };
+            var offset = {
+                x : mouse.x - bg_img.x,
+                y : mouse.y - bg_img.y
+            };
+            var rectOffset = [];
+            for (var i = 0; i < bg_img.rects.length; i++) {
+                rectOffset.push({
+                    left: mouse.x - bg_img.rects[i].left,
+                    top: mouse.y - bg_img.rects[i].top,
+                    right: mouse.x - bg_img.rects[i].right,
+                    bottom: mouse.y - bg_img.rects[i].bottom
+                });
+            }
+            var mouse_up = false;
+            var mouseMove = false;
+            function img_ld_move(e) {
+                mouseMove = true;
+                if (!mouse_up) {
+                    mouse = {
+                        x : e.clientX - canvas.getBoundingClientRect().left,
+                        y : e.clientY - canvas.getBoundingClientRect().top
+                    };
+                    bg_img.x = mouse.x - offset.x;
+                    bg_img.y = mouse.y - offset.y;
+                    for (var i = 0; i < bg_img.rects.length; i++) {
+                        bg_img.rects[i].left = mouse.x - rectOffset[i].left;
+                        bg_img.rects[i].top = mouse.y - rectOffset[i].top;
+                        bg_img.rects[i].right = mouse.x - rectOffset[i].right;
+                        bg_img.rects[i].bottom = mouse.y - rectOffset[i].bottom;
+                    }
+                    bg_img.erase();
+                    bg_img.paint();
+                }
+            }
+            if (bg_img.isMouseInImage(mouse)) {
+                canvas.addEventListener("mousemove" , img_ld_move, false);
+                
+                canvas.addEventListener("mouseup" , function(e){
+                    mouse_up = true;
+                    if (!mouseMove) {
+                        bg_img.rects.forEach(function(r){
+                            if (r.isMouseInRect(mouse)) {
+                                r.selected = true;
+                            } else {
+                                r.selected = false;
+                            }
+                        });
+                        bg_img.erase();
+                        bg_img.paint();
+                    }
+                } , false);
+
+                canvas.addEventListener("mouseout", function(e){
+                    mouse_up = true;
+                    canvas.removeEventListener("mousemove", img_ld_move, false);
+                }, false);
+            }
+        }
+        e.preventDefault();
+    } , false);
+
+    canvas.addEventListener("DOMMouseScroll" , function(e){
+        var mouse = {
+            x : e.clientX - canvas.getBoundingClientRect().left,
+            y : e.clientY - canvas.getBoundingClientRect().top
+        };
+        if (bg_img.isMouseInImage(mouse)) {
+            bg_img.resize(mouse, -e.detail);
+            bg_img.erase();
+            bg_img.paint();
+            e.preventDefault();
+        }
+        // console.log(e.detail);
+    }, false);
+
+    canvas.addEventListener("mousewheel" , function(e){
+        var mouse = {
+            x : e.clientX - canvas.getBoundingClientRect().left,
+            y : e.clientY - canvas.getBoundingClientRect().top
+        };
+        if (bg_img.isMouseInImage(mouse)) {
+            bg_img.resize(mouse, e.wheelDelta / 120.0);
+            bg_img.erase();
+            bg_img.paint();
+            e.preventDefault();
+        }
+        // console.log(e.wheelDelta);
+    }, false);
+
+}()
+</script>
+
+</body>
+</html>
+
+

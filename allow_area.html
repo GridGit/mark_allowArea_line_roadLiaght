@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>可行区域及其附属</title>
+	<link rel="stylesheet" type="text/css" href="./bootstrap.min.css">
+	<style type="text/css">
+		*{
+			margin: 0;
+			padding: 0;
+		}
+		html,body{
+			width: 100%;
+		}
+		.mark_warp{
+			width: 90%;
+			margin: 0 auto;
+			margin-top: 50px;
+			height: 800px;
+			/*background-color: orange;*/
+		}
+		.mark_canvas{
+			float: left;
+			margin-right: 20px;
+			background-color: rgba(110, 110, 110, 0.2);
+			border: 1px solid rgba(210, 210, 210, 0.5);
+			box-shadow: 2px 2px 2px gray;
+		}
+		.mark_file_wrap{
+			
+			margin-left: 10px;
+			margin-bottom: 10px;
+
+		}
+		.mark_operate{
+			width: 250px;
+			/*height: 200px;*/
+			margin-left: 10px;
+			float: left;
+		}
+		.mark_next_prev button{
+			background-color: rgba(0, 255, 0, 0.5);
+		}
+		.mark_requirement button{
+			background-color: rgba(255, 183, 0, 0.5);
+		}
+
+		.mark_btn {
+			margin-top: 20px;
+		}
+		.mark_btn button{
+			width: 100px;
+			height: 50px;
+			margin-left: 10px;
+			margin-top: 10px;
+			border-radius: 5px;
+			vertical-align: bottom;
+		}
+		.mark_types{
+			margin-left: 10px;
+		}
+	</style>
+</head>
+<body>
+	<div class="mark_warp">
+		<div>
+			<canvas class="mark_canvas" id="mark_canvas" width="700px" height="600px">
+				浏览器不支持
+			</canvas>
+		</div>
+		<div class="mark_file_wrap">
+			<input type="file" name="file" multiple="true" id="mark_file" class="mark_file" accept="image/*" /> 
+		</div>
+		<div class="mark_operate" id="mark_operate" >		
+			<div class="mark_btn mark_next_prev">
+				<button id="mark_prev" class="mark_prev">上一张</button>
+				<button id="mark_next" class="mark_next">下一张</button>
+			</div>
+			<div class="mark_requirement mark_btn" id="mark_requirement">
+				<button id="mark_allow_and_other" class="mark_allow_and_other">不同区域标注</button>
+			</div>
+			<div id="mark_area" style="display: none;" class="mark_area">
+				<div class="mark_btn mark_start_title" id="mark_start_title" >
+					<button id="mark_start" class="mark_start">开始标注物体</button>				
+					<button id="mark_del_object" class="mark_del_object">删除物体</button>				
+					<button id="mark_save" class="mark_save">保存</button>
+				</div>
+				<div class="mark_btn mark_content" id="mark_content" style="display: none;">
+					<div class="mark_types">
+						<div>请选择标注类型：</div>
+						<select id="mark_area_type" class="mark_area_type">
+							<option value="0">---</option>
+							<option value="0,allow_area">当前可行驶区域</option>
+							<option value="1,ban_area" >当前不可行驶区域</option>
+							<option value="2,buffer_area">缓冲区</option>
+							<option value="3,stop_area">停止线</option>
+							<option value="4,isolation_area">隔离带</option>
+							<option value="5,walkway_area">步行道</option>
+							<option value="6,crossing_area">人行横道</option>
+						</select>
+					</div>
+					<div>
+						<button id="mark_dot" class="mark_dot">开始标注</button>
+						<button id="mark_drag" class="mark_drag">拖动</button>
+						<button id="mark_del" class="mark_del">删除</button>
+						<button id="mark_finish" class="mark_finish">完成</button>
+						<button id="mark_return" class="mark_return">返回</button>
+					</div>		
+				</div>
+			</div>
+		</div>
+		
+	</div>
+	<script type="text/javascript" src='./jquery.min.js'></script>
+	<script type="text/javascript" src='./support.js'></script>
+	<script type="text/javascript" src='./LMCanvas.js'></script>
+	<script type="text/javascript">
+
+		var //文件
+			mark_file = $('.mark_file')[0],
+			// 操作区
+			mark_operate = $('.mark_operate'),
+			// 上一张 下一张
+			mark_prev = $('.mark_prev'),
+			mark_next = $('.mark_next'),
+			// 大类别 可行驶区域及其附属 
+			mark_requirement = $('.mark_requirement'),
+			mark_allow_and_other = $('.mark_allow_and_other'),
+		
+			// 四大类别对应的操作面板
+			mark_area = $('.mark_area'),
+
+			// 
+			mark_start_title = $('.mark_start_title');
+
+			mark_start = $('.mark_start'),
+			mark_del_object = $('.mark_del_object'),
+			mark_save = $('.mark_save'),
+
+			mark_content = $('.mark_content');
+
+			mark_dot = $('.mark_dot'),
+			mark_drag = $('.mark_drag'),
+			mark_del = $('.mark_del'),
+			mark_finish = $('.mark_finish'),
+			mark_return = $('.mark_return');
+
+			// 类型
+			mark_area_type = $('.mark_area_type');
+
+
+		var canvas = document.getElementById('mark_canvas');
+		
+		var context = canvas.getContext('2d');
+		// 红橙黄绿青蓝紫 可行驶 不可行驶 缓冲区 停止线 隔离带 步行道 人行横道
+		var area_colors = ['rgba(233, 27, 27, 0.5)', 'rgba(	233, 153, 27, 0.5)', 'rgba(	233, 231, 27, 0.5)', 'rgba(	102, 233, 27, 0.5)', 'rgba(	27, 233, 226, 0.5)', 'rgba(	27, 114, 233, 0.5)', 'rgba(	102, 27, 233, 0.5)'];
+		var line_color = [''];
+		var frame_color = [];
+
+		var file_idx = 0,
+			type,
+			drag_state = true,
+			draw_state = false,
+			bg_img;
+		var util = new Util();
+	   	
+	   	// 
+		DragGraph = function(x, y, w, h, fillStyle, canvas, graphShape = 'circle', strokeStyle = 'rgba(255, 0, 0, 0.3)') {
+	        this.x = x;
+	        this.y = y;
+	        this.w = w;
+	        this.h = h;
+	        this.fillStyle = fillStyle || strokeStyle;
+	        this.strokeStyle = strokeStyle;
+	        this.canvas = canvas;
+	        this.context = canvas.getContext("2d");
+	        this.graphShape = graphShape;
+	    }
+
+	    DragGraph.prototype = {
+	    	// 绘制
+	        paint : function(){
+	            this.context.beginPath();
+	            this.context.fillStyle = this.fillStyle;
+	            this.shapeDraw();
+	            this.context.fill();
+	            this.context.closePath();
+	        },
+	        // 鼠标是否在点上，用于判断，是否能结束绘制
+	        isMouseInGraph : function(mouse){
+	            var d = (mouse.x - this.x) ** 2 + (mouse.y - this.y) ** 2;
+	            return d <= 25;
+	        },
+	        // 绘制点的外形
+	        shapeDraw : function(){
+	            if (this.graphShape == "circle"){
+	                this.context.arc(this.x , this.y , 2.5, 0 , Math.PI*2);
+	            } else if (this.graphShape == "triangle"){
+	                this.context.moveTo(this.x + 50 , this.y + 50); 
+	                this.context.lineTo(this.x + 100 , this.y + 130); 
+	                this.context.lineTo(this.x , this.y + 130);
+	            } else {
+	                this.context.rect( this.x , this.y , this.w , this.h);
+	            }
+	        }, 
+	        // 清除
+	        erase: function() {
+	            this.context.clearRect(0,0,this.canvas.width,this.canvas.height);
+	        },
+	        // 重新调整尺寸
+	        resize: function(mouse, delta) {
+	            var ratio = 1 + delta / 15.0;
+	            ratio = ratio > 0 ? ratio : 1;
+	            cx = mouse.x - this.x;
+	            cy = mouse.y - this.y;
+	            this.x = mouse.x - cx * ratio;
+	            this.y = mouse.y - cy * ratio;
+	        }
+	    }
+	    // 多边形轮廓线
+	    Outline = function(canvas, color = 'rgba(255, 0, 0, 0.9)') {
+	        this.color = color;
+	        this.canvas = canvas;
+	        this.context = canvas.getContext("2d");
+	        this.points = [];
+	        this.mouse;
+	        this.name = '';
+	        this.text = '';
+	        this.currPoint;
+	    }
+
+	    Outline.prototype = {
+	    	// 绘制
+	        paint: function(fill = true) {
+	            if (this.points.length == 0) {
+	                return;
+	            }
+	            if (fill) {
+	                this.fillShape(this.color);
+	            } else {
+	                this.drawLines();
+	                for (var i = 0; i < this.points.length; i++) {
+	                    this.points[i].paint();
+	                }
+	                if (this.mouse) {
+	                    this.mouse.paint;
+	                }
+	            }
+	        },
+	        // 增加点
+	        addPoint: function(point) {
+	            this.currPoint = point;
+	            this.points.push(point);
+	        },
+	        // 是否绘制结束
+	        isDrawDone: function(mouse) {
+	            if (this.points.length == 0) {
+	                return false;
+	            }
+	            return this.points[0].isMouseInGraph(mouse);
+	        },
+	        // 重新排列点的顺序
+	        reorderPoints: function() {
+	            var minX = Math.max(bg_img.width, bg_img.img.width);
+	            var minIndex = 0;
+	            var points = this.points;
+	            for (var i = 0; i < points.length; i++) {
+	                if (points[i].x < minX) {
+	                    minX = points[i].x;
+	                    minIndex = i;
+	                }
+	            }
+	            var ps = [];
+	            var minP = points[minIndex];
+	            var nextP = points[(minIndex+1)%points.length]
+	            var prevP = points[minIndex==0?points.length-1:minIndex-1];
+	            var prevP = points[(minIndex-1+points.length)%points.length];
+	            var crossProduct = (minP.x - prevP.x) * (nextP.y - minP.y) - (minP.y - prevP.y) * (nextP.x - minP.x);
+	            for (var i = 0; i < points.length; i++) {
+	                var index = crossProduct > 0 ?
+	                        (minIndex + i) % points.length :                // 顺时针
+	                        (minIndex - i + points.length) % points.length; // 逆时针
+	                ps.push(points[index]);
+	            }
+	            this.points = ps;
+	        },
+	        // 划线
+	        drawLines: function() {
+	            var pt = this.points;
+	            this.context.beginPath();
+	            this.context.fillStyle = this.color;
+	            this.context.moveTo(pt[0].x, pt[0].y); 
+	            for (var i = 1; i < pt.length; i++) {
+	                this.context.lineTo(pt[i].x, pt[i].y);
+	            }
+	            if (this.mouse) {
+	                this.context.lineTo(this.mouse.x, this.mouse.y);
+	            }
+	            this.context.strokeStyle = this.color;
+	            this.context.stroke();
+	            this.context.closePath();
+	        },
+	        // 填充多边形
+	        fillShape: function(color) {
+	            var pt = this.points;
+	            this.context.beginPath();
+	            this.context.fillStyle = color;
+	            this.context.moveTo(pt[0].x, pt[0].y); 
+	            for (var i = 1; i < pt.length; i++) {
+	                this.context.lineTo(pt[i].x, pt[i].y);
+	            }
+	            this.context.lineTo(pt[0].x, pt[0].y);
+	            this.context.fill();
+	            this.context.closePath();
+	        },
+	        // 重新调整尺寸
+	        resize: function(mouse, delta) {
+	            this.points.forEach(function(p) {
+	                p.resize(mouse, delta);
+	            });
+	        },
+	        // 计算每个多边形的真实面积
+	        calcAreaWithRealCoordinate: function() {
+	            var area = 0, len = this.points.length;
+	            for (var i = 0; i < len; i++) {
+	                var x = calcRealCoordinate(this.points[i].x, 'x');
+	                var y = calcRealCoordinate(this.points[i].y, 'y');
+	                var x1 = calcRealCoordinate(this.points[(i+1)%len].x, 'x');
+	                var y1 = calcRealCoordinate(this.points[(i+1)%len].y, 'y');
+	                area += x * y1 - x1 * y;
+	            }
+	            return Math.abs(area) / 2;
+	        }
+	    }
+	    // 图像上绘制的一类物体
+	    MarkObject = function() {
+	        this.outlines = [];
+	        this.currOutline;
+	        this.drawDone = false;
+	        this.areaType;
+	        this.color = 'rgba(255, 0, 0, 0.7)';
+	    }
+
+	    MarkObject.prototype = {
+	    	// 绘制
+	        paint: function() {
+	        	// 绘制此类物体的每个多边形
+	            for (var i = 0; i < this.outlines.length; i++) {
+	                this.outlines[i].color = this.color;
+	                if (this.currOutline && i == this.outlines.length - 1) {
+	                    this.outlines[i].paint(false);
+	                } else {
+	                    this.outlines[i].paint(true);
+	                }
+	            }
+	        },
+	        // 重新调整大小
+	        resize: function(mouse, delta) {
+	            this.outlines.forEach(function(o){
+	                o.resize(mouse, delta);
+	            });
+	        },
+	        // 获取外围矩形
+	        getBboxWithRealCoordinate: function() {
+	            var top = bg_img.height, bottom = 0, left = bg_img.width, right = 0;
+	            this.outlines.forEach(function(o){
+	                o.points.forEach(function(p){
+	                    top = Math.min(p.y, top);
+	                    bottom = Math.max(p.y, bottom);
+	                    left = Math.min(p.x, left);
+	                    right = Math.max(p.x, right);
+	                });
+	            });
+	            left = calcRealCoordinate(left, 'x');
+	            right = calcRealCoordinate(right, 'x');
+	            top = calcRealCoordinate(top, 'y');
+	            bottom = calcRealCoordinate(bottom, 'y');
+	            var bbox = {
+	                x: (left + right) / 2,
+	                y: (top + bottom) / 2,
+	                w: right - left,
+	                h: bottom - top
+	            }
+	            return bbox;
+	        },
+	        // 获取物体每个多边形的坐标点
+	        getSegmentationWithRealCoordinate: function() {
+	            var seg = [];
+	            this.outlines.forEach(function(o){
+	                var coors = [];
+	                o.points.forEach(function(p){
+	                    coors.push(calcRealCoordinate(p.x, 'x'));
+	                    coors.push(calcRealCoordinate(p.y, 'y'));
+	                });
+	                seg.push(coors);
+	            });
+	            return seg;
+	        },
+	        // 计算一个物体总的多边形面积
+	        calcAreaWithRealCoordinate: function() {
+	            var area = 0;
+	            this.outlines.forEach(function(o){
+	                area += o.calcAreaWithRealCoordinate();
+	            });
+	            return area;
+	        } 
+	    }
+	    // 计算真实坐标
+	    function calcRealCoordinate(c, coordinate = 'x') {
+	        if (coordinate == 'x') {
+	            return (c - bg_img.x) / (bg_img.width) * bg_img.img.width;
+	        } else {
+	            return (c - bg_img.y) / (bg_img.height) * bg_img.img.height;
+	        }
+	    }
+	    // 图项对象
+	    DragImage = function(src, canvas) {
+	        this.img = new Image();
+	        this.img.src = src;
+	        this.canvas = canvas;
+	        this.context = canvas.getContext("2d");
+	        // 覆盖物
+	        this.objects = [];
+	        // 线段
+	        this.lines = [];
+	        // 框
+	        this.currObject;
+	        var that = this;
+	        this.img.onload = function() {
+	            that.x = 0;
+	            that.y = 0;
+	            that.width = that.img.width;
+	            that.height = that.img.height;
+	            that.fitCanvas();
+	            that.paint();
+	        };
+	    }
+
+	    DragImage.prototype = {
+	    	// 绘制
+	        paint: function(){
+	            this.context.drawImage(this.img, this.x, this.y, this.width, this.height);
+
+	            // 绘制每个物体
+	            for (var i = 0; i < this.objects.length; i++) {
+	                this.objects[i].paint();
+	            }
+	        },
+	        // 鼠标是否在图形中
+	        isMouseInImage: function(mouse){
+	            var out = mouse.x < this.x || mouse.y < this.y ||
+	                      mouse.x >= this.x + this.width || mouse.y >= this.y + this.height;
+	            return !out;
+	        },
+	        // 清除
+	        erase: function() {
+	            this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+	        },
+	        // 重新调整大小
+	        resize: function(mouse, delta) {
+	            var ratio = 1 + delta / 15.0;
+	            ratio = ratio > 0 ? ratio : 1;
+	            cx = mouse.x - this.x;
+	            cy = mouse.y - this.y;
+	            this.x = mouse.x - cx * ratio;
+	            this.y = mouse.y - cy * ratio;
+	            this.width = this.width * ratio;
+	            this.height = this.height * ratio;
+
+	            this.objects.forEach(function(o){
+	                o.resize(mouse, delta);
+	            });
+	        },
+	        // 调整图像大小使之完全绘制在canvas中
+	        fitCanvas: function() {
+	            var radio = 1.0;
+	            if (this.img.width / this.img.height > canvas.width / canvas.height) {
+	                radio = this.img.width / canvas.width;
+	                this.y = (canvas.height - this.height / radio) / 2;
+	            } else {
+	                radio = this.img.height / canvas.height;
+	                this.x = (canvas.width - this.width / radio) / 2;
+	            }
+	            this.width = this.width / radio;
+	            this.height = this.height / radio;
+	        },
+	        // 获取要保存的数据
+	        get_coordinates_json_str: function(name) {
+	            var json = {};
+	            json.annotation = [];
+	            bg_img.objects.forEach(function(o){
+	                anno = {};
+	                anno.area = o.calcAreaWithRealCoordinate();
+	                var bbox = o.getBboxWithRealCoordinate();
+	                anno.bbox = {};
+	                anno.bbox.x1 = bbox.x;
+	                anno.bbox.y1 = bbox.y;
+	                anno.bbox.w = bbox.w;
+	                anno.bbox.h = bbox.h;
+	                anno.areaType = {};
+   					
+                    var areaTypeValue = o.areaType.split(',');
+                    anno.areaType.id = areaTypeValue[0];
+                    anno.areaType.name = areaTypeValue[1];
+                   
+	                anno.id = '';
+	                anno.type = 1;
+	                anno.image_id = name; 
+	                anno.segmentation = o.getSegmentationWithRealCoordinate();
+
+	                json.annotation.push(anno);
+	            });
+	            json.image = {};
+	            json.image.coco_url = 'images/' + name;
+	            json.image.date_captured = '';
+	            json.image.file_name = name;
+	            json.image.flickr_url = '';
+	            json.image.height = bg_img.img.height;
+	            json.image.width = bg_img.img.width;
+	            json.image.id = name.slice(0, name.length - 4);
+	            json.image.license = 0;
+	            return JSON.stringify(json);
+	        }
+	    }
+
+		// 选择文件
+		$(mark_file).on('change', markFile);
+		function markFile(e){
+			e.stopPropagation();
+			e.preventDefault();
+			fileIdx = 0;
+			loadData()
+	        $('.mark_requirement button').css('background-color', 'rgba(255, 183, 0, 0.5)');
+
+		}
+		function loadData(){
+			console.log(mark_file.files[0].name)
+			var fileName =  mark_file.files[file_idx].name;
+			var len = fileName.length;
+			if (fileName.slice(len - 4, len) != '.jpg'
+	            && fileName.slice(len - 5, len) != '.jpeg'
+	            && fileName.slice(len - 4, len) != '.png') {
+	            return;
+	        }
+	        // mark_operate.fadeIn()
+	        // canvas中绘制图像
+	        var img_src = mark_file.files[file_idx].name;
+	        bg_img = new DragImage(img_src, canvas);
+	        bg_img.erase();
+	        bg_img.paint();
+	        canvas.style.cursor = 'pointer';
+		}
+		// 上一张
+		mark_prev.on('click', markPrev)
+		function markPrev(e){
+			e.stopPropagation();
+			e.preventDefault();
+
+			if (!mark_file.value) {
+	            alert('没有选择标注文件');
+	            return;
+	        }
+	        if (file_idx <= 0) {
+	            alert('已经是第一张');
+	            return;
+	        } else {
+	            // saveData();
+	            --file_idx;
+	            loadData();
+	        }
+		}
+		// 下一张
+		mark_next.on('click', markNext);
+		function markNext(e){
+			e.stopPropagation();
+			e.preventDefault();
+
+			 if (!mark_file.value) {
+	            alert('没有选择标注文件');
+	            return;
+	        }
+	        if (file_idx >= mark_file.files.length-1) {
+	            alert('已经是最后一张');
+	            return;
+	        } else {
+	            // saveData();
+	            ++file_idx;
+	            loadData();
+	        }
+		}
+		// 选择标注的类型,弹出对应操作区
+		// 可行区域及其附属
+		mark_allow_and_other.on('click', markAllowAndOther);
+		function markAllowAndOther(e){
+			e.stopPropagation();
+			e.preventDefault();
+			if(mark_file.files.length === 0){
+				alert("请先选择图片。。。");
+				return;
+			}
+			console.log('sss')
+			$('.mark_requirement button').css('background-color', 'rgba(255, 183, 0, 0.5)');
+			$(this).css('background-color', 'rgba(255, 0, 0, 0.5)');
+			mark_area.slideDown();
+		}
+		
+		// 开始标注物体
+		mark_start.on('click', markStart)
+		function markStart(e){
+			e.stopPropagation();
+			e.preventDefault();
+
+			if(mark_file.files.length === 0){
+				alert('请选择图片');
+				return;
+			}
+
+			bg_img.currObject = new MarkObject();
+			bg_img.objects.push(bg_img.currObject);
+
+			mark_content.slideDown();
+			
+			mark_area_type.val('0');
+
+			mark_start_title.slideUp();
+		}
+		// 删除物体
+		mark_del_object.on('click', markDelObject)	
+		function markDelObject(e){
+			e.stopPropagation();
+			e.preventDefault();
+
+			
+			bg_img.objects.pop();
+	        bg_img.currObject = null;
+	        bg_img.erase();
+	        bg_img.paint();
+		}
+		// 保存
+		mark_save.on('click', markSave);
+		function markSave(e){
+			e.stopPropagation();
+			e.preventDefault();
+			saveData();
+		}
+		function saveData(){
+			if (bg_img.objects.length == 0) {
+	            alert('还没标轮廓呢');
+	            return;
+	        }
+	        saveCoordinates();
+		}
+		function saveCoordinates(){
+			var text = bg_img.get_coordinates_json_str(mark_file.files[file_idx].name);
+	        var data = new Blob([text], {type: "text/plain"});
+	        textFile = window.URL.createObjectURL(data);
+	        var link = document.createElement('a');
+	        var fileName = mark_file.files[file_idx].name + '.txt';
+	        // var fileName = fileInput.files[file_idx].name + '.html';
+	        link.setAttribute('download', fileName);
+	        link.href = textFile;
+	        document.body.appendChild(link);
+	        // wait for the link to be added to the document
+	        window.requestAnimationFrame(function () {
+	            var event = new MouseEvent('click');
+	            link.dispatchEvent(event);
+	            document.body.removeChild(link);
+	        });
+		}
+		// 选择标注区域类型
+		mark_area_type.on('change', markAreaType)
+		function markAreaType(e){
+			e.stopPropagation();
+			e.preventDefault();
+
+			resetCurrObjectColor();
+		}
+		// 
+		// 标点 
+		mark_dot.on('click', markDot)
+		function markDot(e){
+			e.stopPropagation();
+			e.preventDefault();
+
+			draw_state = true;
+			drag_state = false;
+		}
+		// 拖动
+		mark_drag.on('click', markDrag);
+		function markDrag(e){
+			e.stopPropagation();
+			e.preventDefault();
+
+			draw_state = false;
+			drag_state = true;
+		}
+		// 删除物体或点
+		mark_del.on('click', markDel)
+		function markDel(e){
+			e.stopPropagation();
+			e.preventDefault();
+
+			if (bg_img.currObject.currOutline == null) {
+	            bg_img.currObject.outlines.pop();
+	        } else {
+	            bg_img.currObject.currOutline.points.pop();
+	            if (bg_img.currObject.currOutline.points.length == 0) {
+	                bg_img.currObject.currOutline = null;
+	                bg_img.currObject.outlines.pop();
+	            }
+	        }
+	        bg_img.erase();
+	        bg_img.paint();
+		}		
+		// 完成
+		mark_finish.on('click', markFinish)
+		function markFinish(e){
+			e.stopPropagation();
+			e.preventDefault();
+			
+			if(mark_area_type.val() == 0 ){
+				alert('请选择标注类型。。。');
+				return;
+			}
+
+	        bg_img.currObject.areaType = mark_area_type.val();
+
+	        resetCurrObjectColor();
+
+	        if (bg_img.currObject.currOutline) {
+	            if (bg_img.currObject.currOutline.mouse) {
+	                bg_img.currObject.currOutline.mouse = null;
+	            }
+	            bg_img.currObject.currOutline = null;
+	        }
+	        bg_img.erase();
+	        bg_img.paint();
+
+	        draw_state = false;
+	        drag_state = true;
+
+	        mark_content.slideUp();
+	        mark_start_title.slideDown();
+		}
+		// 重新设置当前物体颜色
+		function resetCurrObjectColor(){
+			var index;
+	      	
+	      	index = parseInt(mark_area_type.val().split(',')[0]);
+	      
+	        bg_img.currObject.color = area_colors[index];
+	        bg_img.erase();
+	        bg_img.paint();
+		}
+		mark_return.on('click', markReturn)
+		function markReturn(e){
+			 if (bg_img.currObject.currOutline) {
+	            if (bg_img.currObject.currOutline.mouse) {
+	                bg_img.currObject.currOutline.mouse = null;
+	            }
+	            bg_img.currObject.currOutline = null;
+	        }
+
+	        bg_img.currObject = null;
+	        bg_img.objects.pop();
+
+	        bg_img.erase();
+	        bg_img.paint();
+
+	        draw_state = false;
+	        drag_state = true;
+
+	        mark_content.slideUp();
+	        mark_start_title.slideDown();
+	       
+		}
+	    canvas.addEventListener('mousedown', mouseDown, false) 	
+    	function mouseDown(e){
+    		e.stopPropagation();
+        	e.preventDefault();
+        	var loc = util.windowToCanvas(canvas, e.clientX, e.clientY);	
+        	if(bg_img.isMouseInImage(loc)){
+        		if(drag_state){
+					canvas.style.cursor = 'pointer';
+					 var mouse = {
+		                x : e.clientX - canvas.getBoundingClientRect().left,
+		                y : e.clientY - canvas.getBoundingClientRect().top
+		            };
+		            var offset = {
+		                x : mouse.x - bg_img.x,
+		                y : mouse.y - bg_img.y
+		            };
+		            var objectOffset = [];
+		            for (var n = 0; n < bg_img.objects.length; n++) {
+		                var outlineOffset = [];
+		                for (var i = 0; i < bg_img.objects[n].outlines.length; i++) {
+		                    var outlinePointOffset = [];
+		                    for (var j = 0; j < bg_img.objects[n].outlines[i].points.length; j++) {
+		                        outlinePointOffset.push({
+		                            x: mouse.x - bg_img.objects[n].outlines[i].points[j].x,
+		                            y: mouse.y - bg_img.objects[n].outlines[i].points[j].y
+		                        });
+		                    }
+		                    outlineOffset.push({outlinePointOffset: outlinePointOffset});
+		                }
+		                objectOffset.push({outlineOffset: outlineOffset});
+		            }
+
+		            var mouse_up = false;
+		            function img_ld_move(e) {
+		                if (!mouse_up) {
+		                    mouse = {
+		                        x : e.clientX - canvas.getBoundingClientRect().left,
+		                        y : e.clientY - canvas.getBoundingClientRect().top
+		                    };
+		                    bg_img.x = mouse.x - offset.x;
+		                    bg_img.y = mouse.y - offset.y;
+
+		                    for (var n = 0; n < bg_img.objects.length; n++) {
+		                        for (var i = 0; i < bg_img.objects[n].outlines.length; i++) {
+		                            for (var j = 0; j < bg_img.objects[n].outlines[i].points.length; j++) {
+		                                bg_img.objects[n].outlines[i].points[j].x = mouse.x - objectOffset[n].outlineOffset[i].outlinePointOffset[j].x;
+		                                bg_img.objects[n].outlines[i].points[j].y = mouse.y - objectOffset[n].outlineOffset[i].outlinePointOffset[j].y;
+		                            }
+		                        }
+		                    }
+		                    bg_img.erase();
+		                    bg_img.paint();
+		                }
+		            }
+		            if (bg_img.isMouseInImage(mouse)) {
+		                canvas.addEventListener("mousemove" , img_ld_move, false);
+		                
+		                canvas.addEventListener("mouseup" , function(e){
+		                    mouse_up = true;
+		                } , false);
+
+		                canvas.addEventListener("mouseout", function(e){
+		                    mouse_up = true;
+		                    canvas.removeEventListener("mousemove", img_ld_move, false);
+		                }, false);
+		            }	     
+	        	}else if(draw_state){
+	        		canvas.style.cursor = 'crosshair';
+	        		if (!bg_img.currObject.currOutline || bg_img.currObject.currOutline == null) {
+		                bg_img.currObject.currOutline = new Outline(canvas);
+		                bg_img.currObject.outlines.push(bg_img.currObject.currOutline);
+		            }
+
+		            var mouse = {
+		                x : e.clientX - canvas.getBoundingClientRect().left,
+		                y : e.clientY - canvas.getBoundingClientRect().top
+		            };
+		            if (bg_img.currObject.currOutline.isDrawDone(mouse)) {
+		                bg_img.currObject.currOutline.reorderPoints();
+		                bg_img.currObject.currOutline.mouse = null;
+		                bg_img.currObject.currOutline = null;
+		                bg_img.erase();
+		                bg_img.paint();
+		                return;
+		            }
+
+		            var p = new DragGraph(mouse.x, mouse.y, 0, 0, "rgba(0, 255, 0, 0.7)", canvas, "circle", "#00FF00");
+		            bg_img.currObject.currOutline.currPoint = p;
+		            bg_img.currObject.currOutline.points.push(p);
+		            bg_img.erase();
+		            bg_img.paint();
+
+		            function point_move(e) {
+		                if (draw_state) {
+		                    var mouse = {
+		                        x : e.clientX - canvas.getBoundingClientRect().left,
+		                        y : e.clientY - canvas.getBoundingClientRect().top
+		                    };
+		                    if (bg_img.currObject && bg_img.currObject.currOutline) {
+		                        var p = new DragGraph(mouse.x, mouse.y, 0, 0, "rgba(0, 255, 0, 0.7)", canvas, "circle", "#00FF00");
+		                        bg_img.currObject.currOutline.mouse = p;
+		                        bg_img.paint();
+		                    }
+		                }
+		            }                
+		            canvas.addEventListener("mousemove" , point_move, false);
+		            
+		            canvas.addEventListener("mouseup" , function() {
+		                if (draw_state) {
+		                    // TODO
+		                }
+		            }, false);
+
+		            canvas.addEventListener("mouseout", function(e) {
+		                canvas.removeEventListener("mousemove", point_move, false);
+		            }, false);
+        		}
+        	}   					
+    	}
+    	canvas.addEventListener("DOMMouseScroll" , function(e){
+	        var mouse = util.windowToCanvas(canvas, e.clientX, e.clientY);
+	        if (bg_img.isMouseInImage(mouse)) {
+	            bg_img.resize(mouse, -e.detail);
+	            bg_img.erase();
+	            bg_img.paint();
+	            e.preventDefault();
+	        } 
+	    }, false);
+
+	    canvas.addEventListener("mousewheel" , function(e){
+	        var mouse = util.windowToCanvas(canvas, e.clientX, e.clientY);
+	        if (bg_img.isMouseInImage(mouse)) {
+	            bg_img.resize(mouse, e.wheelDelta / 120.0);
+	            bg_img.erase();
+	            bg_img.paint();
+	            e.preventDefault();
+	        }
+	    }, false);
+
+
+	</script>
+</body>
+</html>
