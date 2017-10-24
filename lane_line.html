@@ -8,18 +8,28 @@
 <style>
 body{margin:0;padding:0;}
 .wrap{
-    width: 
+    width: 900px;
+    margin: 0 auto;
+    margin-top: 20px;
+
+}
+.line_title{
+    width: 150px;
+    text-align: center;
+    color: rgba(110, 110, 110, 1.0);
+    margin: 0 auto;
 }
 .canvas_content{
-
 	width: 700px;
 	height: 600px;
 	float: left;
 	margin: 20px;
+    margin-top: 10px;
 }
 .canvas{
     background:#ddd;
     position: absolute;
+    box-shadow: 2px 2px 2px gray;
 }
 button{
 	border: none;
@@ -27,45 +37,66 @@ button{
 	cursor: pointer;
 }
 .operate{
-	width: 300px;
-	margin-top: 20px;
+	width: 160px;
+    text-align: center;
 	float: left;
 }
 .operate div{
 	margin-top: 20px;
 	height: 40px;
 }
-.operate_title,.operate_start,.del{
+.operate_title,.operate_title_2{
+    display: none;
 	padding-bottom: 10px;
 	border-bottom: 1px solid gray;
 }
-#prev,#next{
+#prev,#next,#line_save{
 	width: 70px;
 	height: 40px;
 	background-color: rgb(24, 194, 153);
 }
-#draw_start,#save,#del_last{
-	width: 70px;
-	height: 40px;
-	background-color: rgb(192, 216, 29);
+/*面板样式*/
+.line_attr_panel{
+    width: 210px;
+    height: 250px;
+    background-color: rgba(255 , 255, 255, 0.7);
+    clear: both;
+    margin-left: 30px;
+    display: none;
+    position: fixed;
+    z-index: 20;
+    top: 50px;
+    left: 100px;
+    border-radius: 10px;
+    box-shadow: 2px 2px 2px gray;
 }
-.operate_type button{
-	width: 70px;
-	height: 40px;
-	margin-top: 10px;
-	background-color: rgb(18, 194, 128)
+.line_attr_panel div{
+    height: 40px;
+    line-height: 40px;
+    margin-left: 10px;
 }
-.operate_area{
-	border-bottom: 1px solid gray;
+.line_attr_panel button{
+    height: 30px;
+    line-height: 30px;
+    width: 70px;
+    margin-left: 10px;
+    margin-top: 10px;
+}
+.line_cancel{
+    background-color: rgba( 235, 203, 23, 0.7);
+}
+.line_confirm{
+    background-color: rgba( 37, 240, 17, 0.7);
 }
 </style>
 </head>
 
 <body>
 <div class="wrap">
+    <div id="line_title" class="line_title"><h3>车道线段标注</h3></div>
     <div id="canvas_content" class="canvas_content">
-        <canvas id="canvas" class="canvas" width="700" height="600" ></canvas>
-        <canvas id="canvas2" class="canvas" width="700" height="600" style="pointer-events: none;background-color: rgba(0,0,0,0);"></canvas>
+        <canvas id="canvas" class="canvas" width="700" height="600" >浏览器不支持canvas,请更新浏览器</canvas>
+        <canvas id="canvas2" class="canvas" width="700" height="600" style="pointer-events: none;background-color: rgba(0,0,0,0);">浏览器不支持canvas，请更新浏览器</canvas>
     </div>
 	
     <div class="operate">
@@ -76,50 +107,44 @@ button{
             <button id="prev" class="prev">上一张</button>
             <button id="next" class="next">下一张</button>
         </div>
-        <div id="operate_start" class="operate_start">
-        	<button id="draw_start" class="draw_start">开始画线</button>
-        	<button id="del_last" class="del_last">删除线</button>
-        	<button id="save" class="save">保存</button>
+        <div class="operate_title_2" id="operate_title_2">
+            <button id="line_save" class="lines_save">保存</button>
         </div>
-        <div class="operate_area" id="operate_area" style="display: none;">
-        	<div>请选择车道线类型：</div>     	
-        	<div class="full_dot">
-        		<label>实线/虚线</label>
-				<select id="full_dot_select">
-					<option value="0">---</option>
-					<option value="fulledLine">实线</option>
-					<option value="dottedLine">虚线</option>
-				</select>                  
-			</div>
-			<div class="single_double" >
-				 <label>单线/双线</label>
-				 <select id="single_double_select">
-				 	<option value="0">---</option>
-				 	<option value="singleLine">单线</option>
-				 	<option value="doubleLine">双线</option>
-				 </select>				
-			</div>	
-			<div class="line_color" >
-				<label>白色/黄色/不确定</label>
-				<select id="color_select">
-					<option value="0" >---</option>
-					<option value="white">白色</option>
-					<option value="yellow">黄色</option>
-					<option value="unknown">不确定</option>
-				</select>
-			</div>
-			<div class="operate_type">
-				<button id="draw_dot" class="draw_dot">画线</button>
-				<button id="draw_drag" class="draw_drag">拖动</button>
-				<button id="draw_del" class="draw_del">删除点</button>
-				<button id="draw_finish" class="draw_finish">完成</button>
-				<button id="draw_return" class="draw_return">返回</button>
-			</div>	 
-        </div>        
     </div>
 </div>
-
-
+<!-- 属性选择面板 -->
+<div class="line_attr_panel" id="line_attr_panel">
+    <div>请选择车道线类型：</div>        
+    <div class="full_dot">
+        <label>实线/虚线</label>
+        <select id="full_dot_select">
+            <option value="0">---</option>
+            <option value="fulledLine">实线</option>
+            <option value="dottedLine">虚线</option>
+        </select>                  
+    </div>
+    <div class="single_double" >
+         <label>单线/双线</label>
+         <select id="single_double_select">
+            <option value="0">---</option>
+            <option value="singleLine">单线</option>
+            <option value="doubleLine">双线</option>
+         </select>              
+    </div>  
+    <div class="line_color" >
+        <label>白色/黄色/不确定</label>
+        <select id="color_select">
+            <option value="0" >---</option>
+            <option value="white">白色</option>
+            <option value="yellow">黄色</option>
+            <option value="unknown">不确定</option>
+        </select>
+    </div>
+    <div>
+        <button id="line_cancel" class="line_cancel">取消</button>
+        <button id="line_confirm" class="line_confirm">确定</button>
+    </div>      
+</div>
 <script type="text/javascript" src='./jquery.min.js'></script>
 <script>
 ;~function(){
@@ -132,39 +157,46 @@ button{
         prev_but = $(".prev"),
         next_but = $(".next"),
         
-        operate_start = $('.operate_start'),
-        draw_start = $('.draw_start'),
-        del_last = $('.del_last'),
-        save_but = $(".save"),
-       
-        operate_area = $('.operate_area'),
+        // operate
+        operate_title = $('.operate_title'),
 
+        operate_title_2 = $('.operate_title_2'),
+  
+        // 样式
        	full_dot_select = $('#full_dot_select'),
        	single_double_select = $('#single_double_select'),
        	color_select = $('#color_select'),
+        // 面板
+        line_attr_panel = $('.line_attr_panel'),
+        // 确定
+        line_confirm = $('.line_confirm'),
+        // 取消
+        line_cancel = $('.line_cancel'),
 
-       	draw_dot = $('.draw_dot'),
-       	draw_drag = $('.drag_drag'),
-       	draw_del = $('.draw_del'),
-       	draw_finish = $('.draw_finish'),
-       	draw_return = $('.draw_return'),
+        // 只有一张时 保存
+        lines_save = $('.lines_save'),
 
         draw_state = false,
-        drag_state = true;
+    
+        panelTop,
+        panelLeft,
+        panelMousedown = 0,
+        // 记录移动时的开始点
+        mouseStart = {};
 
     var line_colors = ['rgba(233, 27, 27, 0.5)', 'rgba(	233, 153, 27, 0.5)', 'rgba(	233, 231, 27, 0.5)', 'rgba(	102, 233, 27, 0.5)', 'rgba(	27, 233, 226, 0.5)', 'rgba(	27, 114, 233, 0.5)', 'rgba(	102, 27, 233, 0.5)'];
 
 
-   	DragGraph = function(x, y, w, h, fillStyle, canvas, graphShape = 'circle', strokeStyle = 'rgba(255, 0, 0, 0.3)') {
+   	DragGraph = function(x, y, w, h, fillStyle, canvas, graphShape, strokeStyle) {
 	        this.x = x;
 	        this.y = y;
 	        this.w = w;
 	        this.h = h;
 	        this.fillStyle = fillStyle || strokeStyle;
-	        this.strokeStyle = strokeStyle;
+	        this.strokeStyle = strokeStyle || 'rgba(255, 0, 0, 0.3)';
 	        this.canvas = canvas;
 	        this.context = canvas.getContext("2d");
-	        this.graphShape = graphShape;
+	        this.graphShape = graphShape || 'circle';
 	    }
 
     DragGraph.prototype = {
@@ -210,6 +242,10 @@ button{
             cy = mouse.y - this.y;
             this.x = mouse.x - cx * ratio;
             this.y = mouse.y - cy * ratio;
+        },
+        fitCanvas: function(ratio, dx, dy){
+            this.x = this.x / ratio + dx;
+            this.y = this.y / ratio + dy;
         }
     }
 
@@ -225,14 +261,17 @@ button{
 		this.points = [];
 	}
 	DrawLine.prototype = {
-		paint: function(){
+		paint: function(flag){
 			if(this.points.length === 0){
 				return;
 			}
 			this.drawLine();
-			for(var i = 0; i < this.points.length; i++){
-				this.points[i].paint();
-			}
+            if(!flag){
+                for(var i = 0; i < this.points.length; i++){
+                    this.points[i].paint();
+                }
+            }
+			
 		},
 		drawLine: function(){
 			var pt = this.points;
@@ -273,14 +312,19 @@ button{
 			for(var i = 0; i < this.points.length; i++){
 				this.points[i].resize(mouse, delta);
 			}
-		}
+		},
+        fitCanvas: function(ratio, dx, dy){
+            this.points.forEach(function(item){
+                item.fitCanvas(ratio, dx, dy);
+            })
+        }
 	}
-    DragRect = function(left, top, right, bottom, canvas, color = '#FF0000') {
+    DragRect = function(left, top, right, bottom, canvas, color ) {
         this.left = left;
         this.top = top;
         this.right = right;
         this.bottom = bottom;
-        this.color = color
+        this.color = color || "#FF0000"
         this.canvas = canvas;
         this.name = '';
         this.type = 0;
@@ -356,14 +400,14 @@ button{
     }
 
     DragImage.prototype = {
-        paint: function(){
+        paint: function(flag){
             this.context.drawImage(this.img, this.x, this.y, this.width, this.height);
 
             this.rects.forEach(function(r){
                 r.paint();
             });
             this.lines.forEach(function(item){
-            	item.paint();
+            	item.paint(flag);
             });
 
             // this.currLine.paint();
@@ -458,43 +502,25 @@ button{
         }
     }
    
-    function saveData() {
-
-    	if(fileInput.files.length === 0){
-			alert('请选择图片...');
-			return;
-		}
-
-        if (bg_img.lines.length == 0) {
-            alert('还没有画线呢。。。');
-            return;
-        }
-        
-        saveCoordinates();
-    }
-
-    function saveCoordinates() {
-        var text = bg_img.get_coordinates_json_str(fileInput.files[file_idx].name);
-        var data = new Blob([text], {type: "text/plain"});
-        textFile = window.URL.createObjectURL(data);
-        var link = document.createElement('a');
-        var fileName = fileInput.files[file_idx].name + '.txt';
-        link.setAttribute('download', fileName);
-        link.href = textFile;
-        document.body.appendChild(link);
-        // wait for the link to be added to the document
-        window.requestAnimationFrame(function () {
-            var event = new MouseEvent('click');
-            link.dispatchEvent(event);
-            document.body.removeChild(link);
-        });
-    }
+   
     // 选择文件
     $(fileInput).on('change', function () {
         file_idx = 0;
+ 
+        if(fileInput.files.length == 0) return;
         loadData();
+
+        if (fileInput.files.length == 1) {
+            operate_title_2.fadeIn();
+            operate_title.fadeOut();
+        }else if(fileInput.files.length > 1){
+            operate_title.fadeIn();
+            operate_title_2.fadeOut();
+        }
     });
+    // 加载数据
     function loadData() {
+       
         var fileName = fileInput.files[file_idx].name;
         var len = fileName.length;
         if (fileName.slice(len - 4, len) != '.jpg'
@@ -508,199 +534,212 @@ button{
         bg_img.erase();
         bg_img.paint();
         canvas.style.cursor = 'pointer';
+
+        // 初始化绘线
+        
+        // 初始化 line对象，每次点击，绘制一条新线
+        bg_img.currLine = new DrawLine(canvas);
+        bg_img.lines.push(bg_img.currLine);
+
+        draw_state = true;
+        initAuxiliaryLine();      
+    }
+    // 坐标转换
+    function windowToCanvas(e, canvas){
+        return {
+            x: e.clientX - canvas.getBoundingClientRect().left,
+            y: e.clientY - canvas.getBoundingClientRect().top
+        }
+    }
+    // 初始化辅助线
+    function initAuxiliaryLine(){
+        // 地层canvas绑定MouseMove事件
+        canvas.addEventListener('mousemove', mouseMoveDrawAssistLine,false);
+        
+        function mouseMoveDrawAssistLine(e){
+            
+            var mouse = windowToCanvas(e, canvas);
+
+            if(bg_img && canvas){
+                if(bg_img.isMouseInImage(mouse)){
+                    
+                    var left = e.clientX - canvas.getBoundingClientRect().left;
+                    var top = e.clientY - canvas.getBoundingClientRect().top;
+                    
+                    var ctx = canvas2.getContext("2d");
+                    ctx.clearRect(0, 0, canvas2.width, canvas2.height);
+                    // 开始绘制 标线
+                    ctx.strokeStyle="gray";
+                    ctx.beginPath();
+                    ctx.moveTo(left-canvas2.width, top);
+                    ctx.lineTo(left+canvas2.width, top);
+                    ctx.moveTo(left, top-canvas2.height);
+                    ctx.lineTo(left, top+canvas2.height);
+                    ctx.stroke();
+                    ctx.closePath();
+
+                    canvas.addEventListener('mouseout', mouseoutClearMousemove, false)
+                    function mouseoutClearMousemove(e){
+                        ctx.clearRect(0, 0, canvas2.width, canvas2.height)
+                    }
+                }
+                if(!bg_img.isMouseInImage(mouse)){
+                    var ctx = canvas2.getContext('2d');
+                    
+                    canvas.style.cursor = 'pointer';
+
+                    ctx.clearRect(0, 0, canvas2.width, canvas2.height)
+                }  
+            }
+        }
+    }
+    // 绑定键盘事件
+    document.addEventListener('keydown', keyDown) 
+    // 记录是否已点击开始
+    // 
+    var startFlag = false
+
+    function keyDown(e){
+    
+        // 结束画线
+        if(bg_img && bg_img.currLine && bg_img.points &&  bg_img.currLine.points.length == 0) return;
+
+        if(e.keyCode == 27 || e.key == 'Escape'){
+            e.stopPropagation();
+            e.preventDefault();
+
+            panelMousedown++;
+
+            if(bg_img && bg_img.currLine && bg_img.currLine.mouse){
+                bg_img.currLine.mouse = null;
+                bg_img.currLine = null;
+                
+                bg_img.erase();
+                bg_img.paint(true);        
+
+                line_attr_panel.css('top', panelTop - 60);
+                line_attr_panel.css('left', panelLeft - 100);
+                
+
+                full_dot_select.val('0');
+                single_double_select.val('0');
+                color_select.val('0');
+
+                line_attr_panel.slideDown();
+
+                canvas.removeEventListener("mousemove", mouseMoveDraw);
+
+                return;
+            }
+        }
+        // 删除点
+        if(e.keyCode = 8 && e.key == 'Backspace'){
+            e.stopPropagation();
+            e.preventDefault();
+
+            // 如果没有当前线段，则删除上一线段
+            if(bg_img.currLine == null){
+                bg_img.lines.pop()
+            }else {
+                // 如果存在当前线段，则删除线端中的最后一点
+                bg_img.currLine.points.pop();
+                // 如果点删除完，则删除上一线段
+                if(bg_img.currLine.points.length == 0){
+                    bg_img.lines.pop()
+                }
+            }
+            bg_img.erase();
+            bg_img.paint();
+
+            if(bg_img.lines.length == 0){ 
+                // 初始化 line对象，每次点击，绘制一条新线
+                bg_img.currLine = new DrawLine(canvas);
+                bg_img.lines.push(bg_img.currLine);
+            }
+        }
     }
 
-   	// 开始画线
-    draw_start.on('click', drawStart)
-    function drawStart(e){
-    	e.stopPropagation();
-		e.preventDefault();
-		
-		if(fileInput.files.length === 0){
-			alert('请选择图片');
-			return;
-		}
-
-		// 初始化 line对象，每次点击，绘制一条新线
-    	bg_img.currLine = new DrawLine(canvas);
-		bg_img.lines.push(bg_img.currLine);
-
-		full_dot_select.val('0');
-		single_double_select.val('0');
-		color_select.val('0');
-
-		operate_area.slideDown();
-		operate_start.slideUp();
+    // 选择框
+    full_dot_select.on('mouseup', fullDotSelect);
+    function fullDotSelect(e){
+        e.stopPropagation();
+        e.preventDefault();
     }
+    single_double_select.on('mouseup', singleDoubleSelect);
+    function singleDoubleSelect(e){
+        e.stopPropagation();
+        e.preventDefault();
+    }
+    color_select.on('mouseup', colorSelect);
+    function colorSelect(e){
+        e.stopPropagation();
+        e.preventDefault();
+    }
+    // 确定
+    line_confirm.on('click', lineConfirm)
+    function lineConfirm(e){
+        e.stopPropagation();
+        e.preventDefault();
 
-    // 删除线
-   	del_last.on('click', delLast)
-  	function delLast(e){
-  		e.stopPropagation();
-  		e.preventDefault();
-
-  		if(fileInput.files.length === 0){
-			alert('请选择图片...');
-			return;
-		}
-		
-        if (bg_img.lines.length == 0) {
-            alert('还没有画线呢。。。');
+        // 保存之前，先选择样式
+        if(full_dot_select.val() == 0 ){
+            alert('请选择实线或虚线。。。');
             return;
         }
-  		bg_img.lines.pop();
-  		bg_img.currLine = null;
-  		bg_img.erase();
-  		bg_img.paint();
-  	}
-  	// 保存
-  	save_but.on('click', saveBut)
-  	function saveBut(e){
-  		e.stopPropagation();
-  		e.preventDefault();
-  		saveData();
-  	}
-  
-    full_dot_select.on('change', fullDotSelect);
-    function fullDotSelect(e){
-    	e.stopPropagation();
-    	e.preventDefault();
+        if(single_double_select.val() == 0){
+            alert('请选择单线或双线。。。');
+            return;
+        }
+        if(color_select.val() == 0){
+            alert('请选择颜色。。。');
+            return;
+        }
 
-    	resetCurrLineColor()
+        // 保存属性数据到线对象
+        bg_img.lines[bg_img.lines.length - 1].laneStyle = full_dot_select.val();
+        bg_img.lines[bg_img.lines.length - 1].laneType = single_double_select.val();
+        bg_img.lines[bg_img.lines.length - 1].laneColor = color_select.val();
+
+        // 设置颜色
+        resetCurrLineColor();
+      
+        // 重新初始化一条线
+        // 初始化 line对象，绘制一条新线
+        bg_img.currLine = new DrawLine(canvas);
+        bg_img.lines.push(bg_img.currLine);
+        draw_state = true;
+
+        panelMousedown = 0;
+
+        line_attr_panel.slideUp();
     }
-    single_double_select.on('change', singDoubleSelect);
-    function singDoubleSelect(e){
-    	e.stopPropagation();
-    	e.preventDefault();
+ 
+    // 取消
+    line_cancel.on('click', lineCancel);
+    function lineCancel(e){
+        e.stopPropagation();
+        e.preventDefault();
 
-    	resetCurrLineColor();
+        if(bg_img.currLine){
+            if(bg_img.currLine.mouse){
+                bg_img.currLine.mouse = null
+            }
+            bg_img.currLine = null
+        }
+        bg_img.lines.pop();
+        bg_img.erase();
+        bg_img.paint();
+
+        // 初始化 line对象，每次点击，绘制一条新线
+        bg_img.currLine = new DrawLine(canvas);
+        bg_img.lines.push(bg_img.currLine);
+        draw_state = true;
+
+        panelMousedown = 0;
+        
+        line_attr_panel.slideUp();
     }
-    color_select.on('change', colorSelect);
-    function colorSelect(e){
-    	e.stopPropagation();
-    	e.preventDefault();
-
-    	resetCurrLineColor();
-    }
-    // 开始标点
-    draw_dot.on('click', drawDot)
-    function drawDot(e){
-    	e.stopPropagation();
-    	e.preventDefault();
-
-    	draw_state = true;
-    	drag_drag = false;
-
-    	canvas.addEventListener('mousemove', mouseMoveDrawAssistLine,false);
-	    
-	    function mouseMoveDrawAssistLine(e){
-	    	var mouse = {
-	            x : e.clientX - canvas.getBoundingClientRect().left,
-	            y : e.clientY - canvas.getBoundingClientRect().top
-	        };
-	        if(bg_img && canvas){
-	        	if(bg_img.isMouseInImage(mouse)){
-	        		// canvas.style.cursor = 'crosshair';
-
-	        		var left = e.clientX - canvas.getBoundingClientRect().left;
-		            var top = e.clientY - canvas.getBoundingClientRect().top;
-		            var ctx = canvas2.getContext("2d");
-		            ctx.clearRect(0, 0, canvas2.width, canvas2.height);
-		            // 开始绘制 标线
-		            ctx.strokeStyle="gray";
-		            ctx.beginPath();
-		            ctx.moveTo(left-canvas2.width, top);
-		            ctx.lineTo(left+canvas2.width, top);
-		            ctx.moveTo(left, top-canvas2.height);
-		            ctx.lineTo(left, top+canvas2.height);
-		            ctx.stroke();
-		            ctx.closePath();
-
-		            canvas.addEventListener('mouseout', mouseoutClearMousemove, false)
-		            function mouseoutClearMousemove(e){
-		            	ctx.clearRect(0, 0, canvas2.width, canvas2.height)
-		            }
-	        	}
-	        	if(!bg_img.isMouseInImage(mouse)){
-	        		var ctx = canvas2.getContext('2d');
-	        		canvas.style.cursor = 'pointer';
-
-	        		ctx.clearRect(0, 0, canvas2.width, canvas2.height)
-	        	}  
-	        }
-	    }
-    }
-    // 拖动
-    draw_drag.on('click', drawDrag);
-    function drawDrag(e){
-    	e.stopPropagation();
-    	e.preventDefault();
-
-    	draw_state = false;
-    	drag_state = true;
-    }
-    // 删除点
-    draw_del.on('click', drawDel);
-    function drawDel(e){
-    	e.stopPropagation();
-    	e.preventDefault();
-
-    	if(bg_img.currLine == null){
-    		bg_img.lines.pop()
-    	}else {
-    		bg_img.currLine.points.pop();
-    		if(bg_img.currLine.points.length == 0){
-    			bg_img.lines.pop()
-    		}
-    	}
-    	bg_img.erase();
-    	bg_img.paint();
-    }
-    // 完成
-    draw_finish.on('click', drawFinish);
-   	function drawFinish(e){
-   		e.stopPropagation();
-   		e.preventDefault();
-
-   		if(full_dot_select.val() == 0 ){
-			alert('请选择实线或虚线。。。');
-			return;
-		}
-		if(single_double_select.val() == 0){
-			alert('请选择单线或双线。。。');
-			return;
-		}
-		if(color_select.val() == 0){
-			alert('请选择颜色。。。');
-			return;
-		}
-
-
-		 bg_img.lines[bg_img.lines.length - 1].laneStyle = full_dot_select.val();
-		 bg_img.lines[bg_img.lines.length - 1].laneType = single_double_select.val();
-		 bg_img.lines[bg_img.lines.length - 1].laneColor = color_select.val();
-
-
-	    resetCurrLineColor();
-
-	    if(bg_img.currLine) {
-	        if(bg_img.currLine.mouse) {
-	           bg_img.currLine.mouse = null;
-	        }
-	        bg_img.currLine = null;
-	    }
-	    bg_img.erase();
-	    bg_img.paint();
-
-        draw_state = false;
-        drag_state = true;
-  
-        console.log(bg_img)
-
-   		operate_area.slideUp();
-		operate_start.slideDown();
-   	}
-   	
+   
    	// 重新设置当前物体颜色
 	function resetCurrLineColor(){
 		var color;
@@ -734,39 +773,23 @@ button{
       		}else if(c == 'unknown' && b == 'singleLine' && a == 'dottedLine'){
       			color ='rgb(31, 31, 36)' //黑
       		}
-
       	}
-      	if(bg_img.currLine){
-      		bg_img.currLine.color = color;
-      	}else{
-      		bg_img.lines[bg_img.lines.length - 1].color = color;
-      	}
+        bg_img.lines[bg_img.lines.length - 1].color = color; 
         bg_img.erase();
-        bg_img.paint();
+        bg_img.paint(true);
 	}
-    // 返回
-    draw_return.on('click', drawReturn);
-    function drawReturn(e){
-    	e.stopPropagation();
-    	e.preventDefault();
 
+   lines_save.on('click', operateTitle2)
+   function operateTitle2(e){
+        e.stopPropagation();
+        e.preventDefault();
 
-    	if(bg_img.currLine){
-    		if(bg_img.currLine.mouse){
-    			bg_img.currLine.mouse = null
-    		}
-    		bg_img.currLine = null
-    	}
-    	bg_img.lines.pop();
-    	bg_img.erase();
-    	bg_img.paint();
-
-    	draw_state = false;
-    	drag_state = true;
-
-    	operate_area.slideUp();
-		operate_start.slideDown();
-    }
+        if (!fileInput.value) {
+            alert('没有选择标注文件');
+            return;
+        }
+        saveData();
+   }
     // 上一张
     prev_but.on('click', prevBut)
     function prevBut(e){
@@ -792,6 +815,10 @@ button{
    		e.stopPropagation();
    		e.preventDefault();
 
+        if(bg_img.lines.length != 0){
+            saveData();
+        }
+
    		if (!fileInput.value) {
             alert('没有选择标注文件');
             return;
@@ -805,102 +832,144 @@ button{
             loadData();
         }
    	}
- 
-    var mouseStart = {};
+    // 保存数据
+    function saveData() {
 
+        if(fileInput.files.length === 0){
+            alert('请选择图片...');
+            return;
+        }
+
+        if (bg_img.lines.length == 0 || bg_img.lines[0].points.length == 0) {
+            alert('还没有画线呢。。。');
+            return;
+        }
+    
+        
+        saveCoordinates();
+    }
+    function saveCoordinates() {
+        var text = bg_img.get_coordinates_json_str(fileInput.files[file_idx].name);
+        var data = new Blob([text], {type: "text/plain"});
+        textFile = window.URL.createObjectURL(data);
+        var link = document.createElement('a');
+        var fileName = fileInput.files[file_idx].name + '.txt';
+        link.setAttribute('download', fileName);
+        link.href = textFile;
+        document.body.appendChild(link);
+        // wait for the link to be added to the document
+        window.requestAnimationFrame(function () {
+            var event = new MouseEvent('click');
+            link.dispatchEvent(event);
+            document.body.removeChild(link);
+        });
+    }
+
+    
+
+    // 取消右键默认菜单事件
+    document.addEventListener('contextmenu', contextMenu, false);
+    function contextMenu(e){
+        e.preventDefault();     
+        return false;
+    }
+    // canvas mousedown
     canvas.addEventListener( "mousedown" , function(e){
     	e.stopPropagation();
     	e.preventDefault();
+  
+        var mouse = windowToCanvas(e, canvas);
 
-    	var mouse = {
-	        x : e.clientX - canvas.getBoundingClientRect().left,
-	        y : e.clientY - canvas.getBoundingClientRect().top
-	    };
 	    mouseStart.x = mouse.x;
 	    mouseStart.y = mouse.y
-	    if(bg_img.isMouseInImage(mouse)){  	
-	    	if (draw_state) {
-	    		
-	    		canvas.style.cursor = 'crosshair';
+        if(bg_img &&  bg_img.isMouseInImage(mouse)){
+            if(e.button == 0){
+                if(panelMousedown != 0){
+                    canvas.style.cursor = 'pointer'
+                    return;
+                }
+                if (draw_state) { 
 
-	    		// 如果当前存在正在绘制的线段	    		
-	    		if(!bg_img.currLine){
-	    			return;
-	    		}
-	    		if(bg_img.currLine.isDrawDone(mouse)){
-	    			bg_img.currLine.mouse = null;
-	    			bg_img.currLine = null;
-	    			bg_img.erase();
-	    			bg_img.paint();
+                    // 设置面板位置                
+                    panelTop = e.clientY
+                    panelLeft = e.clientX;
+                    // 设置鼠标样式
+                    canvas.style.cursor = 'crosshair';
 
-	    			draw_state = false;
-	    			canvas.style.cursor = 'pointer';
-	    			return; 
-	    		}
-	    		// 新建 点
-    			var p = new DragGraph(mouse.x, mouse.y, 0, 0, "rgba(0, 255, 0, 0.7)", canvas, "circle", "#00FF00"); 
-    			// 将此点设为当前线段的最新点，并加入points数组
-    			bg_img.currLine.currPoint = p
-    			bg_img.currLine.points.push(p);
-    			// 重绘，绘制最先新点
-    			bg_img.erase();
-    			bg_img.paint();
+                    // 如果当前存在正在绘制的线段                
+                    if(!bg_img.currLine){
+                        return;
+                    }
+                    // 新建 点
+                    var p = new DragGraph(mouse.x, mouse.y, 0, 0, "rgba(0, 255, 0, 0.7)", canvas, "circle", "#00FF00"); 
+                    // 将此点设为当前线段的最新点，并加入points数组
+                    bg_img.currLine.currPoint = p
+                    bg_img.currLine.points.push(p);
+                    // 重绘，绘制最先新点
+                    bg_img.erase();
+                    bg_img.paint();              
+                } 
+            }else if(e.button == 2){
+                canvas.style.cursor = 'pointer';
 
-	            canvas.addEventListener("mousemove" , mouseMoveDraw, false);
-	            function mouseMoveDraw(e){
-	            	e.stopPropagation();
-	            	e.preventDefault();
+                canvas.addEventListener('mousemove', mouseMoveChangePoint, false);
+                function mouseMoveChangePoint(e){
+                    e.stopPropagation();
+                    e.preventDefault();
 
-	            	var mouse = {
-				        x : e.clientX - canvas.getBoundingClientRect().left,
-				        y : e.clientY - canvas.getBoundingClientRect().top
-				    };
+                    var loc = windowToCanvas(e, canvas);
 
-				    if(bg_img.currLine){
-				    	bg_img.currLine.mouse = mouse;
-				   	 	bg_img.erase();
-				    	bg_img.paint();
-				    }
-	            }
-	            canvas.addEventListener("mouseout", function(e) {
-	                canvas.removeEventListener("mousemove", mouseMoveDraw, false);
-	            }, false);
-	        } else if(drag_state){
-	        		
-	        		canvas.addEventListener('mousemove', mouseMoveChangePoint, false);
-	        		function mouseMoveChangePoint(e){
-	        			e.stopPropagation();
-	        			e.preventDefault();
+                    var deltax = loc.x - mouseStart.x;
+                    var deltay = loc.y - mouseStart.y;
+                    mouseStart.x = loc.x;
+                    mouseStart.y = loc.y;
 
-	        			var loc = {
-	        				x: e.clientX - canvas.getBoundingClientRect().left,
-	        				y: e.clientY - canvas.getBoundingClientRect().top
-	        			}
-	        			var deltax = loc.x - mouseStart.x;
-	        			var deltay = loc.y - mouseStart.y;
-	        			mouseStart.x = loc.x;
-	        			mouseStart.y = loc.y;
+                    bg_img.move(deltax, deltay);
+                    bg_img.erase();
+                    bg_img.paint(true);
 
-	        			bg_img.move(deltax, deltay);
-	        			bg_img.erase();
-	        			bg_img.paint();
+                }
+                canvas.addEventListener('mouseup', mouseUpCancelMousemove, false);
+                function mouseUpCancelMousemove(e){
+                    e.stopPropagation();
+                    e.preventDefault();
 
-	        		}
-	        		canvas.addEventListener('mouseup', mouseUpCancelMousemove, false);
-	        		function mouseUpCancelMousemove(e){
-	        			e.stopPropagation();
-	        			e.preventDefault();
-
-	        			canvas.removeEventListener('mousemove', mouseMoveChangePoint, false);
-	        		}
-	                canvas.addEventListener("mouseout", function(e){
-	                    mouse_up = true;
-	                    canvas.removeEventListener("mousemove", mouseMoveChangePoint, false);
-	                }, false);
-	            }
-	    } 
+                    canvas.removeEventListener('mousemove', mouseMoveChangePoint, false);
+                }
+                canvas.addEventListener("mouseout", function(e){
+                    e.stopPropagation();
+                    e.preventDefault();
+                    canvas.removeEventListener("mousemove", mouseMoveChangePoint, false);
+                }, false);
+            }
+        } 
     } , false);
 
+    // canvas mousemove
+    canvas.addEventListener("mousemove" , mouseMoveDraw)
+
+    canvas.addEventListener("mouseout", function(e) {
+        canvas.removeEventListener("mousemove", mouseMoveDraw);
+    });
+
+    canvas.addEventListener('mouseover',function(e){
+        canvas.addEventListener('mousemove', mouseMoveDraw);
+    });
+
+    function mouseMoveDraw(e){
+        e.stopPropagation();
+        e.preventDefault();       
+        var mouse = windowToCanvas(e, canvas);
+        if(draw_state){
+            if(bg_img && bg_img.isMouseInImage(mouse)){
+                if(bg_img.currLine && bg_img.currLine.points.length != 0){
+                    bg_img.currLine.mouse = mouse;
+                    bg_img.erase();
+                    bg_img.paint();
+                }
+            }
+        }           
+    }
 
 	// 鼠标滚轮缩放
     canvas.addEventListener("DOMMouseScroll" , function(e){
@@ -908,10 +977,11 @@ button{
             x : e.clientX - canvas.getBoundingClientRect().left,
             y : e.clientY - canvas.getBoundingClientRect().top
         };
+        if(!bg_img) return; 
         if (bg_img.isMouseInImage(mouse)) {
             bg_img.resize(mouse, -e.detail);
             bg_img.erase();
-            bg_img.paint();
+            bg_img.paint(true);
             e.preventDefault();
         }
         // console.log(e.detail);
@@ -922,15 +992,15 @@ button{
             x : e.clientX - canvas.getBoundingClientRect().left,
             y : e.clientY - canvas.getBoundingClientRect().top
         };
+        if(!bg_img) return;
         if (bg_img.isMouseInImage(mouse)) {
             bg_img.resize(mouse, e.wheelDelta / 120.0);
             bg_img.erase();
-            bg_img.paint();
+            bg_img.paint(true);
             e.preventDefault();
         }
         // console.log(e.wheelDelta);
     }, false);
-
 }()
 </script>
 

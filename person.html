@@ -41,8 +41,7 @@ button{
 }
 .operate_title button{
 	width: 70px;
-	height: 40px;
-	
+	height: 40px;	
 }
 .car_person button{
 	width: 70px;
@@ -524,142 +523,181 @@ button{
             alert('没有选择标注文件');
             return;
         }
-        if (file_idx >= fileInput.files.length-1) {
+        if(file_idx >= fileInput.files.length-1) {
             alert('已经是最后一张');
             return;
-        } else {
+        }else{
             // saveData();
             ++file_idx;
             loadData();
         }
-        // console.log(fileInput.files[file_idx]);
+
     }
 
-    canvas.addEventListener('mousemove', function(e){
-        if(bg_img && canvas){
-            var left = e.clientX - canvas.getBoundingClientRect().left;
-            var top = e.clientY - canvas.getBoundingClientRect().top;
-            var ctx = canvas2.getContext("2d");
-            ctx.clearRect(0, 0, canvas2.width, canvas2.height);
-            // 开始绘制 标线
-            ctx.strokeStyle="#0000FF";
-            ctx.beginPath();
-            ctx.moveTo(left-canvas2.width, top);
-            ctx.lineTo(left+canvas2.width, top);
-            ctx.moveTo(left, top-canvas2.height);
-            ctx.lineTo(left, top+canvas2.height);
-            ctx.stroke();
-            ctx.closePath();
-        }
-    },false);
+   
+    canvas.addEventListener('mousemove', mouseMoveDrawAssistLine,false);
+        
+    function mouseMoveDrawAssistLine(e){
+        var mouse = {
+            x : e.clientX - canvas.getBoundingClientRect().left,
+            y : e.clientY - canvas.getBoundingClientRect().top
+        };
 
-    canvas.addEventListener( "mousedown" , function(e){
-        if (draw_state) {
-            bg_img.currRect = new DragRect(
+        if(bg_img && canvas){
+            if(bg_img.isMouseInImage(mouse)){
+                
+                var left = e.clientX - canvas.getBoundingClientRect().left;
+                var top = e.clientY - canvas.getBoundingClientRect().top;
+                var ctx = canvas2.getContext("2d");
+                ctx.clearRect(0, 0, canvas2.width, canvas2.height);
+                // 开始绘制 标线
+                ctx.strokeStyle="gray";
+                ctx.beginPath();
+                ctx.moveTo(left-canvas2.width, top);
+                ctx.lineTo(left+canvas2.width, top);
+                ctx.moveTo(left, top-canvas2.height);
+                ctx.lineTo(left, top+canvas2.height);
+                ctx.stroke();
+                ctx.closePath();
+
+                canvas.addEventListener('mouseout', mouseoutClearMousemove, false)
+                function mouseoutClearMousemove(e){
+                    ctx.clearRect(0, 0, canvas2.width, canvas2.height)
+                }
+            }
+            if(!bg_img.isMouseInImage(mouse)){
+                var ctx = canvas2.getContext('2d');
+                
+                canvas.style.cursor = 'pointer';
+
+                ctx.clearRect(0, 0, canvas2.width, canvas2.height)
+            }  
+        }
+    }
+
+    // 取消右键默认菜单事件
+    document.addEventListener('contextmenu', contextMenu, false);
+    function contextMenu(e){
+        e.preventDefault();     
+        return false;
+    }
+
+    canvas.addEventListener( "mousedown" , mouseDownOperate, false);
+    function mouseDownOperate(e){
+        e.stopPropagation();
+        e.preventDefault();
+  
+        var mouse = {
+            x : e.clientX - canvas.getBoundingClientRect().left,
+            y : e.clientY - canvas.getBoundingClientRect().top
+        };
+        if(bg_img.isMouseInImage(mouse)){
+            if (e.button == 2) {
+                var mouse = {
+                    x : e.clientX - canvas.getBoundingClientRect().left,
+                    y : e.clientY - canvas.getBoundingClientRect().top
+                };
+                var offset = {
+                    x : mouse.x - bg_img.x,
+                    y : mouse.y - bg_img.y
+                };
+                var rectOffset = [];
+                for (var i = 0; i < bg_img.rects.length; i++) {
+                    rectOffset.push({
+                        left: mouse.x - bg_img.rects[i].left,
+                        top: mouse.y - bg_img.rects[i].top,
+                        right: mouse.x - bg_img.rects[i].right,
+                        bottom: mouse.y - bg_img.rects[i].bottom
+                    });
+                }
+                var mouse_up = false;
+                var mouseMove = false;
+                function img_ld_move(e) {
+                    mouseMove = true;
+                    if (!mouse_up) {
+                        mouse = {
+                            x : e.clientX - canvas.getBoundingClientRect().left,
+                            y : e.clientY - canvas.getBoundingClientRect().top
+                        };
+                        bg_img.x = mouse.x - offset.x;
+                        bg_img.y = mouse.y - offset.y;
+                        for (var i = 0; i < bg_img.rects.length; i++) {
+                            bg_img.rects[i].left = mouse.x - rectOffset[i].left;
+                            bg_img.rects[i].top = mouse.y - rectOffset[i].top;
+                            bg_img.rects[i].right = mouse.x - rectOffset[i].right;
+                            bg_img.rects[i].bottom = mouse.y - rectOffset[i].bottom;
+                        }
+                        bg_img.erase();
+                        bg_img.paint();
+                    }
+                }
+                if (bg_img.isMouseInImage(mouse)) {
+                    canvas.addEventListener("mousemove" , img_ld_move, false);
+                    
+                    canvas.addEventListener("mouseup" , function(e){
+                        mouse_up = true;
+                        if (!mouseMove) {
+                            bg_img.rects.forEach(function(r){
+                                if (r.isMouseInRect(mouse)) {
+                                    r.selected = true;
+                                } else {
+                                    r.selected = false;
+                                }
+                            });
+                            bg_img.erase();
+                            bg_img.paint();
+                        }
+                    } , false);
+
+                    canvas.addEventListener("mouseout", function(e){
+                        mouse_up = true;
+                        canvas.removeEventListener("mousemove", img_ld_move, false);
+                    }, false);
+                }
+            }else if(e.button == 0){
+                bg_img.currRect = new DragRect(
                 e.clientX - canvas.getBoundingClientRect().left,
                 e.clientY - canvas.getBoundingClientRect().top,
                 e.clientX - canvas.getBoundingClientRect().left,
                 e.clientY - canvas.getBoundingClientRect().top,
                 canvas);
-            bg_img.currRect.color = bg_img.currColor;
-            bg_img.currRect.name = bg_img.currName;
-            bg_img.currRect.type = bg_img.currType;
-            bg_img.rects.push(bg_img.currRect);
+                bg_img.currRect.color = bg_img.currColor;
+                bg_img.currRect.name = bg_img.currName;
+                bg_img.currRect.type = bg_img.currType;
+                bg_img.rects.push(bg_img.currRect);
 
-            function point_move(e) {
-                if (draw_state) {
-                    bg_img.currRect.right = e.clientX - canvas.getBoundingClientRect().left;
-                    bg_img.currRect.bottom = e.clientY - canvas.getBoundingClientRect().top;
-                    bg_img.paint();
-                }
-            }                
-            canvas.addEventListener("mousemove" , point_move, false);
-            
-            canvas.addEventListener("mouseup" , function() {
-                if (draw_state) {
-                    // adjust rect
-                    if (bg_img.currRect.left > bg_img.currRect.right) {
-                        var t = bg_img.currRect.left;
-                        bg_img.currRect.left = bg_img.currRect.right;
-                        bg_img.currRect.right = t;
-                    }
-                    if (bg_img.currRect.top > bg_img.currRect.bottom) {
-                        var t = bg_img.currRect.top;
-                        bg_img.currRect.top = bg_img.currRect.bottom;
-                        bg_img.currRect.bottom = t;
-                    }
-                    draw_state = false;
-                }
-            }, false);
-
-            canvas.addEventListener("mouseout", function(e) {
-                canvas.removeEventListener("mousemove", point_move, false);
-            }, false);
-        } else {
-            var mouse = {
-                x : e.clientX - canvas.getBoundingClientRect().left,
-                y : e.clientY - canvas.getBoundingClientRect().top
-            };
-            var offset = {
-                x : mouse.x - bg_img.x,
-                y : mouse.y - bg_img.y
-            };
-            var rectOffset = [];
-            for (var i = 0; i < bg_img.rects.length; i++) {
-                rectOffset.push({
-                    left: mouse.x - bg_img.rects[i].left,
-                    top: mouse.y - bg_img.rects[i].top,
-                    right: mouse.x - bg_img.rects[i].right,
-                    bottom: mouse.y - bg_img.rects[i].bottom
-                });
-            }
-            var mouse_up = false;
-            var mouseMove = false;
-            function img_ld_move(e) {
-                mouseMove = true;
-                if (!mouse_up) {
-                    mouse = {
-                        x : e.clientX - canvas.getBoundingClientRect().left,
-                        y : e.clientY - canvas.getBoundingClientRect().top
-                    };
-                    bg_img.x = mouse.x - offset.x;
-                    bg_img.y = mouse.y - offset.y;
-                    for (var i = 0; i < bg_img.rects.length; i++) {
-                        bg_img.rects[i].left = mouse.x - rectOffset[i].left;
-                        bg_img.rects[i].top = mouse.y - rectOffset[i].top;
-                        bg_img.rects[i].right = mouse.x - rectOffset[i].right;
-                        bg_img.rects[i].bottom = mouse.y - rectOffset[i].bottom;
-                    }
-                    bg_img.erase();
-                    bg_img.paint();
-                }
-            }
-            if (bg_img.isMouseInImage(mouse)) {
-                canvas.addEventListener("mousemove" , img_ld_move, false);
-                
-                canvas.addEventListener("mouseup" , function(e){
-                    mouse_up = true;
-                    if (!mouseMove) {
-                        bg_img.rects.forEach(function(r){
-                            if (r.isMouseInRect(mouse)) {
-                                r.selected = true;
-                            } else {
-                                r.selected = false;
-                            }
-                        });
-                        bg_img.erase();
+                function point_move(e) {
+                    if (draw_state) {
+                        bg_img.currRect.right = e.clientX - canvas.getBoundingClientRect().left;
+                        bg_img.currRect.bottom = e.clientY - canvas.getBoundingClientRect().top;
                         bg_img.paint();
                     }
-                } , false);
+                }                
+                canvas.addEventListener("mousemove" , point_move, false);
+                
+                canvas.addEventListener("mouseup" , function() {
+                    if (draw_state) {
+                        // adjust rect
+                        if (bg_img.currRect.left > bg_img.currRect.right) {
+                            var t = bg_img.currRect.left;
+                            bg_img.currRect.left = bg_img.currRect.right;
+                            bg_img.currRect.right = t;
+                        }
+                        if (bg_img.currRect.top > bg_img.currRect.bottom) {
+                            var t = bg_img.currRect.top;
+                            bg_img.currRect.top = bg_img.currRect.bottom;
+                            bg_img.currRect.bottom = t;
+                        }
+                        draw_state = false;
+                    }
+                }, false);
 
-                canvas.addEventListener("mouseout", function(e){
-                    mouse_up = true;
-                    canvas.removeEventListener("mousemove", img_ld_move, false);
+                canvas.addEventListener("mouseout", function(e) {
+                    canvas.removeEventListener("mousemove", point_move, false);
                 }, false);
             }
-        }
-        e.preventDefault();
-    } , false);
+        }  
+    }
 
     canvas.addEventListener("DOMMouseScroll" , function(e){
         var mouse = {
