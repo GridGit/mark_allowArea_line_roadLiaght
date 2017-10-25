@@ -884,7 +884,6 @@ button{
         reader.onload = function(e){
             var ratio = bg_img.getRatio();
             var data = JSON.parse(e.target.result).data.lines;
-            console.log(data);
             for(var i = 0; i < data.length - 1; i++){
                 bg_img.lines[i] = new DrawLine(canvas);
 

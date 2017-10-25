@@ -55,6 +55,9 @@
 			margin-bottom: 10px;
 
 		}
+		.mark_file{
+			width: 160px;
+		}
 		.mark_operate{
 			width: 250px;
 			/*height: 200px;*/
@@ -83,6 +86,7 @@
 			margin-left: 10px;
 		}
 		.mark_panel{
+			display: none;
 			position: fixed;
 			top: 150px;
 			left: -20px;
@@ -95,6 +99,7 @@
    			box-shadow: 2px 2px 2px gray;
 		}
 		.mark_panel:hover{
+
 			cursor: pointer;
 		}
 		.mark_selection{
@@ -130,12 +135,13 @@
 		</div>
 		<div class="right_area">
 			<div class="mark_file_wrap">
-				<input type="file" name="file" multiple="true" id="mark_file" class="mark_file" accept="image/*" /> 
+				<input type="file" name="file" multiple="true" id="mark_file" class="mark_file" /> 
 			</div>
 			<div class="mark_operate" id="mark_operate" >		
 				<div class="mark_btn mark_next_prev">
 					<button id="mark_prev" class="mark_prev">上一张</button>
 					<button id="mark_next" class="mark_next">下一张</button>
+					<button id="load_area_data" class="load_area_data">加载轮廓数据</button>
 				</div>
 				<div class="mark_requirement mark_btn" id="mark_requirement">
 					<button id="mark_allow_and_other" class="mark_allow_and_other">不同区域标注</button>
@@ -201,6 +207,8 @@
 			// 上一张 下一张
 			mark_prev = $('.mark_prev'),
 			mark_next = $('.mark_next'),
+			// 加载轮廓数据
+			load_area_data = $('.load_area_data'), 
 			// 大类别 可行驶区域及其附属 
 			mark_requirement = $('.mark_requirement'),
 			mark_allow_and_other = $('.mark_allow_and_other'),
@@ -249,16 +257,16 @@
 			bg_img;
 	   	
 	   	// 
-		DragGraph = function(x, y, w, h, fillStyle, canvas, graphShape = 'circle', strokeStyle = 'rgba(255, 0, 0, 0.3)') {
+		DragGraph = function(x, y, w, h, fillStyle, canvas, graphShape, strokeStyle) {
 	        this.x = x;
 	        this.y = y;
 	        this.w = w;
 	        this.h = h;
 	        this.fillStyle = fillStyle || strokeStyle;
-	        this.strokeStyle = strokeStyle;
+	        this.strokeStyle = strokeStyle || 'rgba(255, 0, 0, 0.3)';
 	        this.canvas = canvas;
 	        this.context = canvas.getContext("2d");
-	        this.graphShape = graphShape;
+	        this.graphShape = graphShape || 'circle';
 	    }
 
 	    DragGraph.prototype = {
@@ -299,11 +307,15 @@
 	            cy = mouse.y - this.y;
 	            this.x = mouse.x - cx * ratio;
 	            this.y = mouse.y - cy * ratio;
+	        },
+	        fitCanvas: function(ratio, dx, dy){
+	        	this.x = this.x / ratio + dx;
+	        	this.y = this.y / ratio + dy;
 	        }
 	    }
 	    // 多边形轮廓线
-	    Outline = function(canvas, color = 'rgba(255, 0, 0, 0.9)') {
-	        this.color = color;
+	    Outline = function(canvas, color) {
+	        this.color = color || "rgba(255, 0, 0, 0.9)";
 	        this.canvas = canvas;
 	        this.context = canvas.getContext("2d");
 	        this.points = [];
@@ -414,6 +426,11 @@
 	                area += x * y1 - x1 * y;
 	            }
 	            return Math.abs(area) / 2;
+	        },
+	        fitCanvas: function(ratio, dx, dy){
+	        	this.points.forEach(function(item){
+	        		item.fitCanvas(ratio, dx, dy);
+	        	})
 	        }
 	    }
 	    // 图像上绘制的一类物体
@@ -487,6 +504,11 @@
 	                area += o.calcAreaWithRealCoordinate();
 	            });
 	            return area;
+	        },
+	        fitCanvas: function(ratio, dx, dy){
+	        	this.outlines.forEach(function(item){
+	        		item.fitCanvas(ratio, dx, dy);
+	        	})
 	        } 
 	    }
 	    // 计算真实坐标
@@ -509,6 +531,10 @@
 	        this.lines = [];
 	        // 框
 	        this.currObject;
+	        
+	        this.dx;
+	        this.dy;
+
 	        var that = this;
 	        this.img.onload = function() {
 	            that.x = 0;
@@ -555,18 +581,31 @@
 	                o.resize(mouse, delta);
 	            });
 	        },
+	        getRadio: function(){
+	        	if(this.img.width / this.img.height > this.canvas.width / this.canvas.height){
+	        		return this.img.width / this.canvas.width;
+	        	}else {
+	        		return this.img.height / this.canvas.height;
+	        	}
+	        },
 	        // 调整图像大小使之完全绘制在canvas中
 	        fitCanvas: function() {
-	            var radio = 1.0;
-	            if (this.img.width / this.img.height > canvas.width / canvas.height) {
-	                radio = this.img.width / canvas.width;
+	            var radio = this.getRadio();
+	            if (this.img.width / this.img.height > canvas.width / canvas.height) {               
 	                this.y = (canvas.height - this.height / radio) / 2;
+	                this.dx = 0;
+	                this.dy = this.y;
 	            } else {
-	                radio = this.img.height / canvas.height;
+
 	                this.x = (canvas.width - this.width / radio) / 2;
+	                this.dx = this.x;
+	                this.dy = 0;
 	            }
 	            this.width = this.width / radio;
 	            this.height = this.height / radio;
+	            this.objects.forEach(function(item){
+	            	item.fitCanvas(radio, dx, dy);
+	            })
 	        },
 	        // 获取要保存的数据
 	        get_coordinates_json_str: function(name) {
@@ -618,7 +657,7 @@
 
 		}
 		function loadData(){
-			console.log(mark_file.files[0].name)
+			
 			var fileName =  mark_file.files[file_idx].name;
 			var len = fileName.length;
 			if (fileName.slice(len - 4, len) != '.jpg'
@@ -671,6 +710,82 @@
 	            ++file_idx;
 	            loadData();
 	        }
+		}
+		load_area_data.on('click', loadAreaData);
+
+		function loadAreaData(e){
+			e.stopPropagation();
+			e.preventDefault();
+
+			loadAreaDataFn();
+		}
+		function loadAreaDataFn(){
+			var ratio = bg_img.getRadio();
+
+			var reader = new FileReader();
+
+			reader.onload = function(e){
+				var data = JSON.parse(e.target.result)
+				var annotation = data.annotation;
+				for(var i = 0; i < annotation.length; i++){
+					bg_img.objects[i] = new MarkObject();
+					var areaType = annotation[i].areaType.name;
+					
+					var color = getAreaColor(areaType);
+
+					for(var j = 0; j < annotation[i].segmentation.length; j++){
+						bg_img.objects[i].outlines[j] = new Outline(canvas, color);
+						for(var k = 0; k < annotation[i].segmentation[j].length; k = k + 2){
+							var x = annotation[i].segmentation[j][k];
+							var y = annotation[i].segmentation[j][k + 1]; 
+							var point = new DragGraph(x, y, 0, 0, "rgba(0, 255, 0, 0.7)", canvas, "circle", "#00FF00");
+							bg_img.objects[i].outlines[j].points.push(point);
+						}
+					}
+					bg_img.objects[i].fitCanvas(ratio, bg_img.dx, bg_img.dy);
+				}
+				
+				bg_img.erase();
+				bg_img.paint();
+
+
+				console.log(data);
+			}
+
+			for(var i = 0; i < mark_file.files.length; i++){
+				if(mark_file.files[i].name == mark_file.files[file_idx].name + '.txt'){
+					reader.readAsText(mark_file.files[i])
+				}
+			}
+		}
+		// <option value="0,allow_area">当前可行驶区域</option>
+		// 		<option value="1,ban_area" >当前不可行驶区域</option>
+		// 		<option value="2,buffer_area">缓冲区</option>
+		// 		<option value="3,stop_area">停止线</option>
+		// 		<option value="4,isolation_area">隔离带</option>
+		// 		<option value="5,walkway_area">步行道</option>
+		// 		<option value="6,crossing_area">人行横道</option>
+		// 红橙黄绿青蓝紫 可行驶 不可行驶 缓冲区 停止线 隔离带 步行道 人行横道
+		// var area_colors = ['rgba(233, 27, 27, 0.5)', 'rgba(	233, 153, 27, 0.5)', 'rgba(	233, 231, 27, 0.5)', 'rgba(	102, 233, 27, 0.5)', 'rgba(	27, 233, 226, 0.5)', 'rgba(	27, 114, 233, 0.5)', 'rgba(	102, 27, 233, 0.5)'];
+		
+		function getAreaColor(type){
+			var color;
+			if(type == 'allow_area'){
+				color = 'rgba( 233, 27, 27, 0.5)';
+			}else if(type == 'ban_area'){
+				color = 'rgba( 233, 153, 27, 0.5)';
+			}else if(type == 'buffer_area'){
+				color = 'rgba( 233, 231, 27, 0.5)';
+			}else if(type == 'stop_area'){
+				color = 'rgba( 102, 233, 27, 0.5)';
+			}else if(type == 'isolation_area'){
+				color = 'rgba( 27, 233, 226, 0.5)';
+			}else if(type == 'walkway_area'){
+				color = 'rgba( 27, 114, 233, 0.5)';
+			}else if(type == 'crossing_area'){
+				color = 'rgba( 102, 27, 233, 0.5)';
+			}
+			return color;
 		}
 
 		document.addEventListener('keydown', keyDown);
@@ -894,9 +1009,6 @@
         	var loc = windowToCanvas(e, canvas);	
         	if(bg_img && bg_img.isMouseInImage(loc)){
         		if(e.button == 0){
-
-
-
         			if(draw_state){
 		        		canvas.style.cursor = 'crosshair';
 		        		if (!bg_img.currObject.currOutline || bg_img.currObject.currOutline == null) {
@@ -1011,119 +1123,9 @@
 			            }	     
 		        	}
         		}
-     //    		if(drag_state){
-					// canvas.style.cursor = 'pointer';
-					//  var mouse = {
-		   //              x : e.clientX - canvas.getBoundingClientRect().left,
-		   //              y : e.clientY - canvas.getBoundingClientRect().top
-		   //          };
-		   //          var offset = {
-		   //              x : mouse.x - bg_img.x,
-		   //              y : mouse.y - bg_img.y
-		   //          };
-		   //          var objectOffset = [];
-		   //          for (var n = 0; n < bg_img.objects.length; n++) {
-		   //              var outlineOffset = [];
-		   //              for (var i = 0; i < bg_img.objects[n].outlines.length; i++) {
-		   //                  var outlinePointOffset = [];
-		   //                  for (var j = 0; j < bg_img.objects[n].outlines[i].points.length; j++) {
-		   //                      outlinePointOffset.push({
-		   //                          x: mouse.x - bg_img.objects[n].outlines[i].points[j].x,
-		   //                          y: mouse.y - bg_img.objects[n].outlines[i].points[j].y
-		   //                      });
-		   //                  }
-		   //                  outlineOffset.push({outlinePointOffset: outlinePointOffset});
-		   //              }
-		   //              objectOffset.push({outlineOffset: outlineOffset});
-		   //          }
-
-		   //          var mouse_up = false;
-		   //          function img_ld_move(e) {
-		   //              if (!mouse_up) {
-		   //                  mouse = {
-		   //                      x : e.clientX - canvas.getBoundingClientRect().left,
-		   //                      y : e.clientY - canvas.getBoundingClientRect().top
-		   //                  };
-		   //                  bg_img.x = mouse.x - offset.x;
-		   //                  bg_img.y = mouse.y - offset.y;
-
-		   //                  for (var n = 0; n < bg_img.objects.length; n++) {
-		   //                      for (var i = 0; i < bg_img.objects[n].outlines.length; i++) {
-		   //                          for (var j = 0; j < bg_img.objects[n].outlines[i].points.length; j++) {
-		   //                              bg_img.objects[n].outlines[i].points[j].x = mouse.x - objectOffset[n].outlineOffset[i].outlinePointOffset[j].x;
-		   //                              bg_img.objects[n].outlines[i].points[j].y = mouse.y - objectOffset[n].outlineOffset[i].outlinePointOffset[j].y;
-		   //                          }
-		   //                      }
-		   //                  }
-		   //                  bg_img.erase();
-		   //                  bg_img.paint();
-		   //              }
-		   //          }
-		   //          if (bg_img.isMouseInImage(mouse)) {
-		   //              canvas.addEventListener("mousemove" , img_ld_move, false);
-		                
-		   //              canvas.addEventListener("mouseup" , function(e){
-		   //                  mouse_up = true;
-		   //              } , false);
-
-		   //              canvas.addEventListener("mouseout", function(e){
-		   //                  mouse_up = true;
-		   //                  canvas.removeEventListener("mousemove", img_ld_move, false);
-		   //              }, false);
-		   //          }	     
-	    //     	}else if(draw_state){
-	    //     		canvas.style.cursor = 'crosshair';
-	    //     		if (!bg_img.currObject.currOutline || bg_img.currObject.currOutline == null) {
-		   //              bg_img.currObject.currOutline = new Outline(canvas);
-		   //              bg_img.currObject.outlines.push(bg_img.currObject.currOutline);
-		   //          }
-
-		   //          var mouse = {
-		   //              x : e.clientX - canvas.getBoundingClientRect().left,
-		   //              y : e.clientY - canvas.getBoundingClientRect().top
-		   //          };
-		   //          if (bg_img.currObject.currOutline.isDrawDone(mouse)) {
-		   //              bg_img.currObject.currOutline.reorderPoints();
-		   //              bg_img.currObject.currOutline.mouse = null;
-		   //              bg_img.currObject.currOutline = null;
-		   //              bg_img.erase();
-		   //              bg_img.paint();
-		   //              return;
-		   //          }
-
-		   //          var p = new DragGraph(mouse.x, mouse.y, 0, 0, "rgba(0, 255, 0, 0.7)", canvas, "circle", "#00FF00");
-		   //          bg_img.currObject.currOutline.currPoint = p;
-		   //          bg_img.currObject.currOutline.points.push(p);
-		   //          bg_img.erase();
-		   //          bg_img.paint();
-
-		   //          function point_move(e) {
-		   //              if (draw_state) {
-		   //                  var mouse = {
-		   //                      x : e.clientX - canvas.getBoundingClientRect().left,
-		   //                      y : e.clientY - canvas.getBoundingClientRect().top
-		   //                  };
-		   //                  if (bg_img.currObject && bg_img.currObject.currOutline) {
-		   //                      var p = new DragGraph(mouse.x, mouse.y, 0, 0, "rgba(0, 255, 0, 0.7)", canvas, "circle", "#00FF00");
-		   //                      bg_img.currObject.currOutline.mouse = p;
-		   //                      bg_img.paint();
-		   //                  }
-		   //              }
-		   //          }                
-		   //          canvas.addEventListener("mousemove" , point_move, false);
-		            
-		   //          canvas.addEventListener("mouseup" , function() {
-		   //              if (draw_state) {
-		   //                  // TODO
-		   //              }
-		   //          }, false);
-
-		   //          canvas.addEventListener("mouseout", function(e) {
-		   //              canvas.removeEventListener("mousemove", point_move, false);
-		   //          }, false);
-     //    		}
         	}   					
     	}
+
     	canvas.addEventListener("DOMMouseScroll" , function(e){
 	        var mouse = windowToCanvas(e, canvas);
 	        if (bg_img && bg_img.isMouseInImage(mouse)) {

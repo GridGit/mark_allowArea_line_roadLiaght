@@ -39,9 +39,13 @@ button{
 	padding-bottom: 10px;
 	border-bottom: 1px solid gray;
 }
+#file_list{
+    width: 160px;
+}
 .operate_title button{
 	width: 70px;
-	height: 40px;	
+	height: 40px;
+    vertical-align: top;	
 }
 .car_person button{
 	width: 70px;
@@ -71,6 +75,9 @@ button{
 }
 #save{
 	background-color: yellow;
+}
+#loadRectData{
+    background-color: orange;
 }
 #draw_person{
 	background-color: rgba(255, 0, 0, 0.8);
@@ -117,12 +124,13 @@ button{
 	
     <div class="operate">
 	    <div class="file">
-		    <input type='file' multiple id="file_list" accept="image/*"\>
+		    <input type='file' multiple id="file_list" \>
 		</div>
         <div id="operate_title" class="operate_title">
             <button id="prev">上一张</button>
             <button id="next">下一张</button>
             <button id="save">保存</button>
+            <button id="loadRectData">加载框数据</button>
         </div>
         <div class="operate_type">     	
         	<div class="car_person">
@@ -164,9 +172,12 @@ button{
         bg_img,
         img_src = "",
         fileInput = document.getElementById("file_list"),
+        // 
         prev_but = document.getElementById("prev"),
         next_but = document.getElementById("next"),
         save_but = document.getElementById("save"),
+        loadRectData_but = document.getElementById('loadRectData'),
+        // 不同类型按钮
         draw_person_but = document.getElementById("draw_person"),
         draw_car_but = document.getElementById("draw_car"),
         draw_bicycle_but = document.getElementById("draw_bicycle"),
@@ -181,12 +192,12 @@ button{
         del_but = document.getElementById("del_last"),
         draw_state = false;
 
-    DragRect = function(left, top, right, bottom, canvas, color = '#FF0000') {
+    DragRect = function(left, top, right, bottom, canvas, color ) {
         this.left = left;
         this.top = top;
         this.right = right;
         this.bottom = bottom;
-        this.color = color
+        this.color = color || '#FF0000';
         this.canvas = canvas;
         this.name = '';
         this.type = 0;
@@ -246,6 +257,8 @@ button{
         this.currColor;
         this.currName;
         this.currType;
+        this.dx;
+        this.dy;
         var that = this;
         this.img.onload = function() {
             that.x = 0;
@@ -302,8 +315,12 @@ button{
             var dx = 0, dy = 0;
             if (this.img.width / this.img.height > canvas.width / canvas.height) {
                 dy = (canvas.height - this.height / ratio) / 2;
+                this.dx = 0;
+                this.dy = dy;
             } else {
                 dx = (canvas.width - this.width / ratio) / 2;
+                this.dx = dx;
+                this.dy = 0;
             }
             this.width = this.width / ratio;
             this.height = this.height / ratio;
@@ -368,6 +385,12 @@ button{
         }
     }
 
+    
+    // 选择文件
+    fileInput.addEventListener('change', function () {
+        file_idx = 0;
+        loadData();
+    });
     function loadData() {
         var fileName = fileInput.files[file_idx].name;
         var len = fileName.length;
@@ -382,8 +405,46 @@ button{
         bg_img.erase();
         bg_img.paint();
     }
-
    
+    // 上一张
+    prev_but.onclick = function(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        if (!fileInput.value) {
+            alert('没有选择标注文件');
+            return;
+        }
+        if (file_idx <= 0) {
+            alert('已经是第一张');
+            return;
+        } else {
+            // saveData();
+            --file_idx;
+            loadData();
+        }
+        // console.log(fileInput.files[file_idx]);
+    }
+    // 下一张
+    next_but.onclick = function(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        if (!fileInput.value) {
+            alert('没有选择标注文件');
+            return;
+        }
+        if(file_idx >= fileInput.files.length-1) {
+            alert('已经是最后一张');
+            return;
+        }else{
+            // saveData();
+            ++file_idx;
+            loadData();
+        }
+    }
+    // 保存
+    save_but.onclick = function (e) {
+        saveData();
+    }
     function saveData() {
         if (bg_img.rects.length == 0) {
             alert('还没有标框呢');
@@ -391,7 +452,6 @@ button{
         }
         saveCoordinates();
     }
-
     function saveCoordinates() {
         var text = bg_img.get_coordinates_json_str(fileInput.files[file_idx].name);
         var data = new Blob([text], {type: "text/plain"});
@@ -408,15 +468,46 @@ button{
             document.body.removeChild(link);
         });
     }
+    loadRectData_but.onclick = function(e){
+        e.stopPropagation();
+        e.preventDefault();
 
-    fileInput.addEventListener('change', function () {
-        file_idx = 0;
-        loadData();
-    });
-
-    save_but.onclick = function (e) {
-        saveData();
+        loadRectDataFn();
     }
+    function loadRectDataFn(){
+        var reader = new FileReader();
+        reader.onload = function(e){
+            var ratio = bg_img.getRatio();    
+            
+            var data = JSON.parse(e.target.result).data;
+
+            for(var name in data){
+                if(data[name].length != 0){
+                    var color = getRectColor(name);
+                    for(var j = 0; j < data[name].length; j++){
+                        
+                        // DragRect = function(left, top, right, bottom, canvas, color );
+                        var d = data[name][j];
+                        console.log(d);
+
+                        var rect = new DragRect(d.left, d.top, d.right, d.bottom, canvas);
+                        rect.fitCanvas(ratio, bg_img.x, bg_img.y);
+                        rect.color = color;
+                        bg_img.rects.push(rect);
+                    }
+                }
+            }
+            bg_img.erase();
+            bg_img.paint();
+        }
+        for(var i = 0; i < fileInput.files.length; i++){
+            if(fileInput.files[i].name === fileInput.files[file_idx].name + '.txt'){
+                reader.readAsText(fileInput.files[i]);
+            }
+        }
+    }
+
+
     // 人 红
     draw_person_but.onclick = function (e) {
         draw_state = true;
@@ -502,38 +593,35 @@ button{
         bg_img.paint();
     }
 
-    prev_but.onclick = function(e) {
-        if (!fileInput.value) {
-            alert('没有选择标注文件');
-            return;
+    function getRectColor(name){
+        var color;
+
+        if(name == 'person'){
+            color = 'rgb(255, 0, 0)';
+        }else if(name == 'car'){
+            color = 'rgb(0, 255, 0)';
+        }else if(name == 'bicycle'){
+            color = 'rgb(47, 18, 168)';
+        }else if(name == 'motorbike'){
+            color = 'rgb(0, 0, 255)';
+        }else if(name = 'rickshaw'){
+            color = 'rgb(197, 142, 40)'
+        }else if(name = 'electroTricycle'){
+            color = 'rgb(36, 190, 48)';
+        }else if(name = 'redLight'){
+            color = 'rgb(255, 0, 0)';
+        }else if(name = 'greenLight'){
+            color = 'rgb(0, 255, 0)';
+        }else if(name = 'yellowLight'){
+            color = 'rgb(239, 221, 13)';
+        }else if(name = 'blackLight'){
+            color = 'rgb(10, 10, 10)';
         }
-        if (file_idx <= 0) {
-            alert('已经是第一张');
-            return;
-        } else {
-            // saveData();
-            --file_idx;
-            loadData();
-        }
-        // console.log(fileInput.files[file_idx]);
+
+        return color;
     }
 
-    next_but.onclick = function(e) {
-        if (!fileInput.value) {
-            alert('没有选择标注文件');
-            return;
-        }
-        if(file_idx >= fileInput.files.length-1) {
-            alert('已经是最后一张');
-            return;
-        }else{
-            // saveData();
-            ++file_idx;
-            loadData();
-        }
-
-    }
-
+    
     // 添加辅助线
     canvas.addEventListener('mousemove', mouseMoveDrawAssistLine,false);
         
