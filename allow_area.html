@@ -11,6 +11,11 @@
 		html,body{
 			width: 100%;
 		}
+		button{
+			border: none;
+			border-radius: 5px;
+			cursor: pointer;
+		}
 		.mark_warp{
 			width: 90%;
 			margin: 0 auto;
@@ -18,12 +23,31 @@
 			height: 800px;
 			/*background-color: orange;*/
 		}
+		.canvas_wrap{
+			position: relative;
+			display: inline-block;
+			width: 705px;
+			height: 605px;
+			vertical-align: top;
+		}
+		.right_area{
+			display: inline-block;
+			padding-top: 20px;
+			/*border: 1px solid gray;*/
+			vertical-align: top;
+
+		}
 		.mark_canvas{
-			float: left;
+			position: absolute;
+			z-index: 3;
 			margin-right: 20px;
 			background-color: rgba(110, 110, 110, 0.2);
 			border: 1px solid rgba(210, 210, 210, 0.5);
 			box-shadow: 2px 2px 2px gray;
+		}
+		.canvas2{
+			position: absolute;
+			z-index: 5;
 		}
 		.mark_file_wrap{
 			
@@ -58,60 +82,116 @@
 		.mark_types{
 			margin-left: 10px;
 		}
+		.mark_panel{
+			position: fixed;
+			top: 150px;
+			left: -20px;
+			z-index: 99;
+			width: 210px;
+    		height: 150px;
+   			background-color: rgba(255 , 255, 255, 0.7);
+			margin-left: 100px;
+			border-radius: 10px;
+   			box-shadow: 2px 2px 2px gray;
+		}
+		.mark_panel:hover{
+			cursor: pointer;
+		}
+		.mark_selection{
+			margin-left: 30px;
+			margin-top: 10px;
+		}
+		.mark_area_type{
+			margin: 10px 0;
+		}
+		.mark_panel_bottom button{
+			height: 30px;
+		    line-height: 30px;
+		    width: 70px;
+		    margin-left: 10px;
+		    margin-top: 10px;
+		}
+		.mark_confirm{
+			background-color: rgba( 37, 240, 17, 0.7);
+		}
+		.mark_cancel{
+			background-color: rgba( 235, 203, 23, 0.7);
+		}
+
 	</style>
 </head>
 <body>
 	<div class="mark_warp">
-		<div>
+		<div class="canvas_wrap">
 			<canvas class="mark_canvas" id="mark_canvas" width="700px" height="600px">
 				浏览器不支持
 			</canvas>
+			<canvas id="canvas2" class="canvas2" width="700" height="600" style="pointer-events: none;background-color: rgba(0,0,0,0);"></canvas>
 		</div>
-		<div class="mark_file_wrap">
-			<input type="file" name="file" multiple="true" id="mark_file" class="mark_file" accept="image/*" /> 
-		</div>
-		<div class="mark_operate" id="mark_operate" >		
-			<div class="mark_btn mark_next_prev">
-				<button id="mark_prev" class="mark_prev">上一张</button>
-				<button id="mark_next" class="mark_next">下一张</button>
+		<div class="right_area">
+			<div class="mark_file_wrap">
+				<input type="file" name="file" multiple="true" id="mark_file" class="mark_file" accept="image/*" /> 
 			</div>
-			<div class="mark_requirement mark_btn" id="mark_requirement">
-				<button id="mark_allow_and_other" class="mark_allow_and_other">不同区域标注</button>
-			</div>
-			<div id="mark_area" style="display: none;" class="mark_area">
-				<div class="mark_btn mark_start_title" id="mark_start_title" >
-					<button id="mark_start" class="mark_start">开始标注物体</button>				
-					<button id="mark_del_object" class="mark_del_object">删除物体</button>				
-					<button id="mark_save" class="mark_save">保存</button>
+			<div class="mark_operate" id="mark_operate" >		
+				<div class="mark_btn mark_next_prev">
+					<button id="mark_prev" class="mark_prev">上一张</button>
+					<button id="mark_next" class="mark_next">下一张</button>
 				</div>
-				<div class="mark_btn mark_content" id="mark_content" style="display: none;">
-					<div class="mark_types">
-						<div>请选择标注类型：</div>
-						<select id="mark_area_type" class="mark_area_type">
-							<option value="0">---</option>
-							<option value="0,allow_area">当前可行驶区域</option>
-							<option value="1,ban_area" >当前不可行驶区域</option>
-							<option value="2,buffer_area">缓冲区</option>
-							<option value="3,stop_area">停止线</option>
-							<option value="4,isolation_area">隔离带</option>
-							<option value="5,walkway_area">步行道</option>
-							<option value="6,crossing_area">人行横道</option>
-						</select>
+				<div class="mark_requirement mark_btn" id="mark_requirement">
+					<button id="mark_allow_and_other" class="mark_allow_and_other">不同区域标注</button>
+				</div>
+				<div id="mark_area" style="display: none;" class="mark_area">
+					<div class="mark_btn mark_start_title" id="mark_start_title" >
+						<button id="mark_start" class="mark_start">开始标注物体</button>				
+						<button id="mark_del_object" class="mark_del_object">删除物体</button>				
+						<button id="mark_save" class="mark_save">保存</button>
 					</div>
-					<div>
-						<button id="mark_dot" class="mark_dot">开始标注</button>
-						<button id="mark_drag" class="mark_drag">拖动</button>
-						<button id="mark_del" class="mark_del">删除</button>
-						<button id="mark_finish" class="mark_finish">完成</button>
-						<button id="mark_return" class="mark_return">返回</button>
-					</div>		
+					<div class="mark_btn mark_content" id="mark_content" style="display: none;">
+						<div class="mark_types">
+							<div>请选择标注类型：</div>
+							<select id="mark_area_type" class="mark_area_type">
+								<option value="0">---</option>
+								<option value="0,allow_area">当前可行驶区域</option>
+								<option value="1,ban_area" >当前不可行驶区域</option>
+								<option value="2,buffer_area">缓冲区</option>
+								<option value="3,stop_area">停止线</option>
+								<option value="4,isolation_area">隔离带</option>
+								<option value="5,walkway_area">步行道</option>
+								<option value="6,crossing_area">人行横道</option>
+							</select>
+						</div>
+						<div>
+							<button id="mark_dot" class="mark_dot">开始标注</button>
+							<button id="mark_drag" class="mark_drag">拖动</button>
+							<button id="mark_del" class="mark_del">删除</button>
+							<button id="mark_finish" class="mark_finish">完成</button>
+							<button id="mark_return" class="mark_return">返回</button>
+						</div>		
+					</div>
 				</div>
 			</div>
 		</div>
-		
+	</div>
+	<div id="mark_panel" class="mark_panel" >
+		<div id="mark_selection" class="mark_selection">
+			<div>请选择标注类型：</div>
+			<select id="mark_area_type" class="mark_area_type">
+				<option value="0">---</option>
+				<option value="0,allow_area">当前可行驶区域</option>
+				<option value="1,ban_area" >当前不可行驶区域</option>
+				<option value="2,buffer_area">缓冲区</option>
+				<option value="3,stop_area">停止线</option>
+				<option value="4,isolation_area">隔离带</option>
+				<option value="5,walkway_area">步行道</option>
+				<option value="6,crossing_area">人行横道</option>
+			</select>
+		</div>
+		<div id="mark_panel_bottom" class="mark_panel_bottom">
+			<button id="mark_cancel" class="mark_cancel">取消</button>
+			<button id="mark_confirm" class="mark_confirm">完成</button>
+		</div>
 	</div>
 	<script type="text/javascript" src='./jquery.min.js'></script>
-	<script type="text/javascript" src='./LMCanvas.js'></script>
 	<script type="text/javascript">
 
 		var //文件
@@ -129,25 +209,32 @@
 			mark_area = $('.mark_area'),
 
 			// 
-			mark_start_title = $('.mark_start_title');
+			mark_start_title = $('.mark_start_title'),
 
 			mark_start = $('.mark_start'),
 			mark_del_object = $('.mark_del_object'),
 			mark_save = $('.mark_save'),
 
-			mark_content = $('.mark_content');
+			mark_content = $('.mark_content'),
 
 			mark_dot = $('.mark_dot'),
 			mark_drag = $('.mark_drag'),
 			mark_del = $('.mark_del'),
 			mark_finish = $('.mark_finish'),
-			mark_return = $('.mark_return');
+			mark_return = $('.mark_return'),
 
 			// 类型
-			mark_area_type = $('.mark_area_type');
+			mark_area_type = $('.mark_area_type'),
+
+			// 面板的位置
+			// 
+			panelTop,
+
+			panelLeft;
 
 
 		var canvas = document.getElementById('mark_canvas');
+		var canvas2 = document.getElementById('canvas2');
 		
 		var context = canvas.getContext('2d');
 		// 红橙黄绿青蓝紫 可行驶 不可行驶 缓冲区 停止线 隔离带 步行道 人行横道
@@ -160,7 +247,6 @@
 			drag_state = true,
 			draw_state = false,
 			bg_img;
-		var util = new Util();
 	   	
 	   	// 
 		DragGraph = function(x, y, w, h, fillStyle, canvas, graphShape = 'circle', strokeStyle = 'rgba(255, 0, 0, 0.3)') {
@@ -586,17 +672,30 @@
 	            loadData();
 	        }
 		}
+
+		document.addEventListener('keydown', keyDown);
+		function keyDown(e){
+			e.stopPropagation();
+			e.preventDefault();
+
+			console.log(e);
+			if(e.keyCode == 27 || e.key == 'Escape'){
+
+			}
+		}
+
 		// 选择标注的类型,弹出对应操作区
 		// 可行区域及其附属
 		mark_allow_and_other.on('click', markAllowAndOther);
 		function markAllowAndOther(e){
 			e.stopPropagation();
 			e.preventDefault();
+
 			if(mark_file.files.length === 0){
 				alert("请先选择图片。。。");
 				return;
 			}
-			console.log('sss')
+
 			$('.mark_requirement button').css('background-color', 'rgba(255, 183, 0, 0.5)');
 			$(this).css('background-color', 'rgba(255, 0, 0, 0.5)');
 			mark_area.slideDown();
@@ -772,128 +871,262 @@
 	        mark_start_title.slideDown();
 	       
 		}
+		 // 坐标转换
+	    function windowToCanvas(e, canvas){
+	        return {
+	            x: e.clientX - canvas.getBoundingClientRect().left,
+	            y: e.clientY - canvas.getBoundingClientRect().top
+	        }
+	    }   
+		// 取消右键默认菜单事件
+		// 
+	    document.addEventListener('contextmenu', contextMenu, false);
+	    function contextMenu(e){
+	        e.preventDefault();     
+	        return false;
+	    }
+	    // canvas mousedown
+	    // 
 	    canvas.addEventListener('mousedown', mouseDown, false) 	
     	function mouseDown(e){
     		e.stopPropagation();
         	e.preventDefault();
-        	var loc = util.windowToCanvas(canvas, e.clientX, e.clientY);	
-        	if(bg_img.isMouseInImage(loc)){
-        		if(drag_state){
-					canvas.style.cursor = 'pointer';
-					 var mouse = {
-		                x : e.clientX - canvas.getBoundingClientRect().left,
-		                y : e.clientY - canvas.getBoundingClientRect().top
-		            };
-		            var offset = {
-		                x : mouse.x - bg_img.x,
-		                y : mouse.y - bg_img.y
-		            };
-		            var objectOffset = [];
-		            for (var n = 0; n < bg_img.objects.length; n++) {
-		                var outlineOffset = [];
-		                for (var i = 0; i < bg_img.objects[n].outlines.length; i++) {
-		                    var outlinePointOffset = [];
-		                    for (var j = 0; j < bg_img.objects[n].outlines[i].points.length; j++) {
-		                        outlinePointOffset.push({
-		                            x: mouse.x - bg_img.objects[n].outlines[i].points[j].x,
-		                            y: mouse.y - bg_img.objects[n].outlines[i].points[j].y
-		                        });
-		                    }
-		                    outlineOffset.push({outlinePointOffset: outlinePointOffset});
-		                }
-		                objectOffset.push({outlineOffset: outlineOffset});
-		            }
+        	var loc = windowToCanvas(e, canvas);	
+        	if(bg_img && bg_img.isMouseInImage(loc)){
+        		if(e.button == 0){
 
-		            var mouse_up = false;
-		            function img_ld_move(e) {
-		                if (!mouse_up) {
-		                    mouse = {
-		                        x : e.clientX - canvas.getBoundingClientRect().left,
-		                        y : e.clientY - canvas.getBoundingClientRect().top
-		                    };
-		                    bg_img.x = mouse.x - offset.x;
-		                    bg_img.y = mouse.y - offset.y;
 
-		                    for (var n = 0; n < bg_img.objects.length; n++) {
-		                        for (var i = 0; i < bg_img.objects[n].outlines.length; i++) {
-		                            for (var j = 0; j < bg_img.objects[n].outlines[i].points.length; j++) {
-		                                bg_img.objects[n].outlines[i].points[j].x = mouse.x - objectOffset[n].outlineOffset[i].outlinePointOffset[j].x;
-		                                bg_img.objects[n].outlines[i].points[j].y = mouse.y - objectOffset[n].outlineOffset[i].outlinePointOffset[j].y;
-		                            }
-		                        }
-		                    }
-		                    bg_img.erase();
-		                    bg_img.paint();
-		                }
-		            }
-		            if (bg_img.isMouseInImage(mouse)) {
-		                canvas.addEventListener("mousemove" , img_ld_move, false);
-		                
-		                canvas.addEventListener("mouseup" , function(e){
-		                    mouse_up = true;
-		                } , false);
 
-		                canvas.addEventListener("mouseout", function(e){
-		                    mouse_up = true;
-		                    canvas.removeEventListener("mousemove", img_ld_move, false);
-		                }, false);
-		            }	     
-	        	}else if(draw_state){
-	        		canvas.style.cursor = 'crosshair';
-	        		if (!bg_img.currObject.currOutline || bg_img.currObject.currOutline == null) {
-		                bg_img.currObject.currOutline = new Outline(canvas);
-		                bg_img.currObject.outlines.push(bg_img.currObject.currOutline);
-		            }
+        			if(draw_state){
+		        		canvas.style.cursor = 'crosshair';
+		        		if (!bg_img.currObject.currOutline || bg_img.currObject.currOutline == null) {
+			                bg_img.currObject.currOutline = new Outline(canvas);
+			                bg_img.currObject.outlines.push(bg_img.currObject.currOutline);
+			            }
 
-		            var mouse = {
-		                x : e.clientX - canvas.getBoundingClientRect().left,
-		                y : e.clientY - canvas.getBoundingClientRect().top
-		            };
-		            if (bg_img.currObject.currOutline.isDrawDone(mouse)) {
-		                bg_img.currObject.currOutline.reorderPoints();
-		                bg_img.currObject.currOutline.mouse = null;
-		                bg_img.currObject.currOutline = null;
-		                bg_img.erase();
-		                bg_img.paint();
-		                return;
-		            }
+			            var mouse = {
+			                x : e.clientX - canvas.getBoundingClientRect().left,
+			                y : e.clientY - canvas.getBoundingClientRect().top
+			            };
+			            if (bg_img.currObject.currOutline.isDrawDone(mouse)) {
+			                bg_img.currObject.currOutline.reorderPoints();
+			                bg_img.currObject.currOutline.mouse = null;
+			                bg_img.currObject.currOutline = null;
+			                bg_img.erase();
+			                bg_img.paint();
+			                return;
+			            }
 
-		            var p = new DragGraph(mouse.x, mouse.y, 0, 0, "rgba(0, 255, 0, 0.7)", canvas, "circle", "#00FF00");
-		            bg_img.currObject.currOutline.currPoint = p;
-		            bg_img.currObject.currOutline.points.push(p);
-		            bg_img.erase();
-		            bg_img.paint();
+			            var p = new DragGraph(mouse.x, mouse.y, 0, 0, "rgba(0, 255, 0, 0.7)", canvas, "circle", "#00FF00");
+			            bg_img.currObject.currOutline.currPoint = p;
+			            bg_img.currObject.currOutline.points.push(p);
+			            bg_img.erase();
+			            bg_img.paint();
 
-		            function point_move(e) {
-		                if (draw_state) {
-		                    var mouse = {
-		                        x : e.clientX - canvas.getBoundingClientRect().left,
-		                        y : e.clientY - canvas.getBoundingClientRect().top
-		                    };
-		                    if (bg_img.currObject && bg_img.currObject.currOutline) {
-		                        var p = new DragGraph(mouse.x, mouse.y, 0, 0, "rgba(0, 255, 0, 0.7)", canvas, "circle", "#00FF00");
-		                        bg_img.currObject.currOutline.mouse = p;
-		                        bg_img.paint();
-		                    }
-		                }
-		            }                
-		            canvas.addEventListener("mousemove" , point_move, false);
-		            
-		            canvas.addEventListener("mouseup" , function() {
-		                if (draw_state) {
-		                    // TODO
-		                }
-		            }, false);
+			            function point_move(e) {
+			                if (draw_state) {
+			                    var mouse = {
+			                        x : e.clientX - canvas.getBoundingClientRect().left,
+			                        y : e.clientY - canvas.getBoundingClientRect().top
+			                    };
+			                    if (bg_img.currObject && bg_img.currObject.currOutline) {
+			                        var p = new DragGraph(mouse.x, mouse.y, 0, 0, "rgba(0, 255, 0, 0.7)", canvas, "circle", "#00FF00");
+			                        bg_img.currObject.currOutline.mouse = p;
+			                        bg_img.paint();
+			                    }
+			                }
+			            }                
+			            canvas.addEventListener("mousemove" , point_move, false);
+			            
+			            canvas.addEventListener("mouseup" , function() {
+			                if (draw_state) {
+			                    // TODO
+			                }
+			            }, false);
 
-		            canvas.addEventListener("mouseout", function(e) {
-		                canvas.removeEventListener("mousemove", point_move, false);
-		            }, false);
+			            canvas.addEventListener("mouseout", function(e) {
+			                canvas.removeEventListener("mousemove", point_move, false);
+			            }, false);
+	        		}
+        		}else if(e.button == 2){		
+	        		if(true){
+						canvas.style.cursor = 'pointer';
+						 var mouse = {
+			                x : e.clientX - canvas.getBoundingClientRect().left,
+			                y : e.clientY - canvas.getBoundingClientRect().top
+			            };
+			            var offset = {
+			                x : mouse.x - bg_img.x,
+			                y : mouse.y - bg_img.y
+			            };
+			            var objectOffset = [];
+			            for (var n = 0; n < bg_img.objects.length; n++) {
+			                var outlineOffset = [];
+			                for (var i = 0; i < bg_img.objects[n].outlines.length; i++) {
+			                    var outlinePointOffset = [];
+			                    for (var j = 0; j < bg_img.objects[n].outlines[i].points.length; j++) {
+			                        outlinePointOffset.push({
+			                            x: mouse.x - bg_img.objects[n].outlines[i].points[j].x,
+			                            y: mouse.y - bg_img.objects[n].outlines[i].points[j].y
+			                        });
+			                    }
+			                    outlineOffset.push({outlinePointOffset: outlinePointOffset});
+			                }
+			                objectOffset.push({outlineOffset: outlineOffset});
+			            }
+
+			            var mouse_up = false;
+			            function img_ld_move(e) {
+			                if (!mouse_up) {
+			                    mouse = {
+			                        x : e.clientX - canvas.getBoundingClientRect().left,
+			                        y : e.clientY - canvas.getBoundingClientRect().top
+			                    };
+			                    bg_img.x = mouse.x - offset.x;
+			                    bg_img.y = mouse.y - offset.y;
+
+			                    for (var n = 0; n < bg_img.objects.length; n++) {
+			                        for (var i = 0; i < bg_img.objects[n].outlines.length; i++) {
+			                            for (var j = 0; j < bg_img.objects[n].outlines[i].points.length; j++) {
+			                                bg_img.objects[n].outlines[i].points[j].x = mouse.x - objectOffset[n].outlineOffset[i].outlinePointOffset[j].x;
+			                                bg_img.objects[n].outlines[i].points[j].y = mouse.y - objectOffset[n].outlineOffset[i].outlinePointOffset[j].y;
+			                            }
+			                        }
+			                    }
+			                    bg_img.erase();
+			                    bg_img.paint();
+			                }
+			            }
+			            if (bg_img.isMouseInImage(mouse)) {
+			                canvas.addEventListener("mousemove" , img_ld_move, false);
+			                
+			                canvas.addEventListener("mouseup" , function(e){
+			                    mouse_up = true;
+			                } , false);
+
+			                canvas.addEventListener("mouseout", function(e){
+			                    mouse_up = true;
+			                    canvas.removeEventListener("mousemove", img_ld_move, false);
+			                }, false);
+			            }	     
+		        	}
         		}
+     //    		if(drag_state){
+					// canvas.style.cursor = 'pointer';
+					//  var mouse = {
+		   //              x : e.clientX - canvas.getBoundingClientRect().left,
+		   //              y : e.clientY - canvas.getBoundingClientRect().top
+		   //          };
+		   //          var offset = {
+		   //              x : mouse.x - bg_img.x,
+		   //              y : mouse.y - bg_img.y
+		   //          };
+		   //          var objectOffset = [];
+		   //          for (var n = 0; n < bg_img.objects.length; n++) {
+		   //              var outlineOffset = [];
+		   //              for (var i = 0; i < bg_img.objects[n].outlines.length; i++) {
+		   //                  var outlinePointOffset = [];
+		   //                  for (var j = 0; j < bg_img.objects[n].outlines[i].points.length; j++) {
+		   //                      outlinePointOffset.push({
+		   //                          x: mouse.x - bg_img.objects[n].outlines[i].points[j].x,
+		   //                          y: mouse.y - bg_img.objects[n].outlines[i].points[j].y
+		   //                      });
+		   //                  }
+		   //                  outlineOffset.push({outlinePointOffset: outlinePointOffset});
+		   //              }
+		   //              objectOffset.push({outlineOffset: outlineOffset});
+		   //          }
+
+		   //          var mouse_up = false;
+		   //          function img_ld_move(e) {
+		   //              if (!mouse_up) {
+		   //                  mouse = {
+		   //                      x : e.clientX - canvas.getBoundingClientRect().left,
+		   //                      y : e.clientY - canvas.getBoundingClientRect().top
+		   //                  };
+		   //                  bg_img.x = mouse.x - offset.x;
+		   //                  bg_img.y = mouse.y - offset.y;
+
+		   //                  for (var n = 0; n < bg_img.objects.length; n++) {
+		   //                      for (var i = 0; i < bg_img.objects[n].outlines.length; i++) {
+		   //                          for (var j = 0; j < bg_img.objects[n].outlines[i].points.length; j++) {
+		   //                              bg_img.objects[n].outlines[i].points[j].x = mouse.x - objectOffset[n].outlineOffset[i].outlinePointOffset[j].x;
+		   //                              bg_img.objects[n].outlines[i].points[j].y = mouse.y - objectOffset[n].outlineOffset[i].outlinePointOffset[j].y;
+		   //                          }
+		   //                      }
+		   //                  }
+		   //                  bg_img.erase();
+		   //                  bg_img.paint();
+		   //              }
+		   //          }
+		   //          if (bg_img.isMouseInImage(mouse)) {
+		   //              canvas.addEventListener("mousemove" , img_ld_move, false);
+		                
+		   //              canvas.addEventListener("mouseup" , function(e){
+		   //                  mouse_up = true;
+		   //              } , false);
+
+		   //              canvas.addEventListener("mouseout", function(e){
+		   //                  mouse_up = true;
+		   //                  canvas.removeEventListener("mousemove", img_ld_move, false);
+		   //              }, false);
+		   //          }	     
+	    //     	}else if(draw_state){
+	    //     		canvas.style.cursor = 'crosshair';
+	    //     		if (!bg_img.currObject.currOutline || bg_img.currObject.currOutline == null) {
+		   //              bg_img.currObject.currOutline = new Outline(canvas);
+		   //              bg_img.currObject.outlines.push(bg_img.currObject.currOutline);
+		   //          }
+
+		   //          var mouse = {
+		   //              x : e.clientX - canvas.getBoundingClientRect().left,
+		   //              y : e.clientY - canvas.getBoundingClientRect().top
+		   //          };
+		   //          if (bg_img.currObject.currOutline.isDrawDone(mouse)) {
+		   //              bg_img.currObject.currOutline.reorderPoints();
+		   //              bg_img.currObject.currOutline.mouse = null;
+		   //              bg_img.currObject.currOutline = null;
+		   //              bg_img.erase();
+		   //              bg_img.paint();
+		   //              return;
+		   //          }
+
+		   //          var p = new DragGraph(mouse.x, mouse.y, 0, 0, "rgba(0, 255, 0, 0.7)", canvas, "circle", "#00FF00");
+		   //          bg_img.currObject.currOutline.currPoint = p;
+		   //          bg_img.currObject.currOutline.points.push(p);
+		   //          bg_img.erase();
+		   //          bg_img.paint();
+
+		   //          function point_move(e) {
+		   //              if (draw_state) {
+		   //                  var mouse = {
+		   //                      x : e.clientX - canvas.getBoundingClientRect().left,
+		   //                      y : e.clientY - canvas.getBoundingClientRect().top
+		   //                  };
+		   //                  if (bg_img.currObject && bg_img.currObject.currOutline) {
+		   //                      var p = new DragGraph(mouse.x, mouse.y, 0, 0, "rgba(0, 255, 0, 0.7)", canvas, "circle", "#00FF00");
+		   //                      bg_img.currObject.currOutline.mouse = p;
+		   //                      bg_img.paint();
+		   //                  }
+		   //              }
+		   //          }                
+		   //          canvas.addEventListener("mousemove" , point_move, false);
+		            
+		   //          canvas.addEventListener("mouseup" , function() {
+		   //              if (draw_state) {
+		   //                  // TODO
+		   //              }
+		   //          }, false);
+
+		   //          canvas.addEventListener("mouseout", function(e) {
+		   //              canvas.removeEventListener("mousemove", point_move, false);
+		   //          }, false);
+     //    		}
         	}   					
     	}
     	canvas.addEventListener("DOMMouseScroll" , function(e){
-	        var mouse = util.windowToCanvas(canvas, e.clientX, e.clientY);
-	        if (bg_img.isMouseInImage(mouse)) {
+	        var mouse = windowToCanvas(e, canvas);
+	        if (bg_img && bg_img.isMouseInImage(mouse)) {
 	            bg_img.resize(mouse, -e.detail);
 	            bg_img.erase();
 	            bg_img.paint();
@@ -902,8 +1135,8 @@
 	    }, false);
 
 	    canvas.addEventListener("mousewheel" , function(e){
-	        var mouse = util.windowToCanvas(canvas, e.clientX, e.clientY);
-	        if (bg_img.isMouseInImage(mouse)) {
+	        var mouse = windowToCanvas(e, canvas);
+	        if (bg_img && bg_img.isMouseInImage(mouse)) {
 	            bg_img.resize(mouse, e.wheelDelta / 120.0);
 	            bg_img.erase();
 	            bg_img.paint();
@@ -911,7 +1144,44 @@
 	        }
 	    }, false);
 
+	     // 添加辅助线
+	    canvas.addEventListener('mousemove', mouseMoveDrawAssistLine,false);     
+	    function mouseMoveDrawAssistLine(e){
+	        e.stopPropagation();
+	        e.preventDefault();
 
+	        var mouse = windowToCanvas(e, canvas);
+	        if(bg_img && canvas){
+	            if(bg_img.isMouseInImage(mouse)){
+	                
+	                var left = e.clientX - canvas.getBoundingClientRect().left;
+	                var top = e.clientY - canvas.getBoundingClientRect().top;
+	                var ctx = canvas2.getContext("2d");
+	                ctx.clearRect(0, 0, canvas2.width, canvas2.height);
+	                // 开始绘制 标线
+	                ctx.strokeStyle="gray";
+	                ctx.beginPath();
+	                ctx.moveTo(left-canvas2.width, top);
+	                ctx.lineTo(left+canvas2.width, top);
+	                ctx.moveTo(left, top-canvas2.height);
+	                ctx.lineTo(left, top+canvas2.height);
+	                ctx.stroke();
+	                ctx.closePath();
+
+	                canvas.addEventListener('mouseout', mouseoutClearMousemove, false)
+	                function mouseoutClearMousemove(e){
+	                    ctx.clearRect(0, 0, canvas2.width, canvas2.height)
+	                }
+	            }
+	            if(!bg_img.isMouseInImage(mouse)){
+	                var ctx = canvas2.getContext('2d');
+	                
+	                canvas.style.cursor = 'pointer';
+
+	                ctx.clearRect(0, 0, canvas2.width, canvas2.height)
+	            }  
+	        }
+	    }
 	</script>
 </body>
 </html>

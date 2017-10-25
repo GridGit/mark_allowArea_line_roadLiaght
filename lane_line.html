@@ -8,9 +8,11 @@
 <style>
 body{margin:0;padding:0;}
 .wrap{
-    width: 900px;
+    width: 1000px;
+    height: 900px;
     margin: 0 auto;
     margin-top: 20px;
+    /*background-color: orange;*/
 
 }
 .line_title{
@@ -37,7 +39,7 @@ button{
 	cursor: pointer;
 }
 .operate{
-	width: 160px;
+	width: 240px;
     text-align: center;
 	float: left;
 }
@@ -45,16 +47,30 @@ button{
 	margin-top: 20px;
 	height: 40px;
 }
+.file{
+    width: 160px;
+    margin: 0 auto;
+}
+#file_list{
+    width: 100%;
+    text-align: center;
+    margin: 0 auto;
+}
+#operate_title{
+    height: 40px;
+}
 .operate_title,.operate_title_2{
     display: none;
 	padding-bottom: 10px;
 	border-bottom: 1px solid gray;
 }
-#prev,#next,#line_save{
+#prev,#next,#line_save,#load_line,#load_line2{
 	width: 70px;
 	height: 40px;
+    vertical-align: top;
 	background-color: rgb(24, 194, 153);
 }
+
 /*面板样式*/
 .line_attr_panel{
     width: 210px;
@@ -88,6 +104,7 @@ button{
 .line_confirm{
     background-color: rgba( 37, 240, 17, 0.7);
 }
+
 </style>
 </head>
 
@@ -101,14 +118,16 @@ button{
 	
     <div class="operate">
 	    <div class="file">
-		    <input type='file' multiple id="file_list" class="file_list" accept="image/*"\>
+		    <input type='file' multiple id="file_list" class="file_list" \>
 		</div>
         <div id="operate_title" class="operate_title">
             <button id="prev" class="prev">上一张</button>
             <button id="next" class="next">下一张</button>
+            <button id="load_line" class="load_line">加载线数据</button>
         </div>
         <div class="operate_title_2" id="operate_title_2">
             <button id="line_save" class="lines_save">保存</button>
+            <button id="load_line2" class="load_line">加载线数据</button>
         </div>
     </div>
 </div>
@@ -156,7 +175,7 @@ button{
         fileInput = $(".file_list")[0],
         prev_but = $(".prev"),
         next_but = $(".next"),
-        
+        load_line = $('.load_line'),
         // operate
         operate_title = $('.operate_title'),
 
@@ -182,7 +201,8 @@ button{
         panelLeft,
         panelMousedown = 0,
         // 记录移动时的开始点
-        mouseStart = {};
+        mouseStart = {},
+        isLoadLineData = 0;
 
     var line_colors = ['rgba(233, 27, 27, 0.5)', 'rgba(	233, 153, 27, 0.5)', 'rgba(	233, 231, 27, 0.5)', 'rgba(	102, 233, 27, 0.5)', 'rgba(	27, 233, 226, 0.5)', 'rgba(	27, 114, 233, 0.5)', 'rgba(	102, 27, 233, 0.5)'];
 
@@ -383,6 +403,8 @@ button{
 
         this.lines = [];
     	this.currLine;
+        this.dx;
+        this.dy;
 
         this.selectRect;
         this.currColor;
@@ -462,8 +484,12 @@ button{
             var dx = 0, dy = 0;
             if (this.img.width / this.img.height > canvas.width / canvas.height) {
                 dy = (canvas.height - this.height / ratio) / 2;
+                this.dy = dy;
+                this.dx = 0;
             } else {
                 dx = (canvas.width - this.width / ratio) / 2;
+                this.dx = dx;
+                this.dy = 0;
             }
             this.width = this.width / ratio;
             this.height = this.height / ratio;
@@ -550,7 +576,7 @@ button{
             x: e.clientX - canvas.getBoundingClientRect().left,
             y: e.clientY - canvas.getBoundingClientRect().top
         }
-    }
+    }   
     // 初始化辅助线
     function initAuxiliaryLine(){
         // 地层canvas绑定MouseMove事件
@@ -616,6 +642,10 @@ button{
                 
                 bg_img.erase();
                 bg_img.paint(true);        
+
+                if(panelTop > 500){
+                    panelTop = 500;
+                }
 
                 line_attr_panel.css('top', panelTop - 60);
                 line_attr_panel.css('left', panelLeft - 100);
@@ -748,31 +778,8 @@ button{
       		var b = single_double_select.val();
       		var c = color_select.val();
 
-      		if(c == 'white' && b == 'singleLine' &&  a == 'fulledLine'){
-      			color = 'red'; //红
-      		}else if(c == 'white' && b == 'singleLine' && a == 'dottedLine'){
-      			color = 'green'; //绿
-      		}else if(c == 'white' && b == 'doubleLine' && a == 'fulledLine'){
-      			color = 'yellow' // 黄
-      		}else if(c == 'white' && b == 'doubleLine' && a == 'dottedLine'){
-      			color = 'orange' //橙
-      		}else if(c == 'yellow' && b == 'singleLine' && a == 'fulledLine'){
-      			color = 'blue'; //蓝
-      		}else if(c == 'yellow' && b == 'singleLine' && a == 'dottedLine'){
-      			color = 'rgb(60, 119, 21)' //暗紫
-      		}else if(c == 'yellow' && b == 'doubleLine' && a == 'dottedLine'){
-      			color = 'rgb(105, 235, 19)'; //青
-      		}else if (c == 'yellow' && b == 'doubleLine' && a == 'fulledLine') {
-      			color = 'rgb(14, 30, 212)' //紫
-      		}else if(c == 'unknown' && b == 'doubleLine' && a == 'fulledLine'){
-      			color = 'rgb(158, 161, 117)'; //暗黄
-      		}else if(c == 'unknown' && b == 'doubleLine' && a == 'dottedLine'){
-      			color = 'rgb(16, 214, 208)';//天蓝
-      		}else if(c == 'unknown' && b == 'singleLine' && a == 'fulledLine'){
-      			color = 'rgb(168, 83, 24)'; //暗红
-      		}else if(c == 'unknown' && b == 'singleLine' && a == 'dottedLine'){
-      			color ='rgb(31, 31, 36)' //黑
-      		}
+            // 设置颜色
+            color = setLineColor( a, b, c,);
       	}
         bg_img.lines[bg_img.lines.length - 1].color = color; 
         bg_img.erase();
@@ -815,10 +822,11 @@ button{
    		e.stopPropagation();
    		e.preventDefault();
 
-        if(bg_img.lines.length != 0){
-            saveData();
+        if(isLoadLineData == 0){
+            if(bg_img.lines.length != 0){
+                saveData();
+            }
         }
-
    		if (!fileInput.value) {
             alert('没有选择标注文件');
             return;
@@ -832,6 +840,79 @@ button{
             loadData();
         }
    	}
+    load_line.on('click', loadLine)
+    function loadLine(e){
+        e.stopPropagation();
+        e.preventDefault();
+
+        isLoadLineData++;
+        loadLineData()
+
+    }
+    function setLineColor(a, b, c){
+        var color;
+        if(c == 'white' && b == 'singleLine' &&  a == 'fulledLine'){
+            color = 'red'; //红
+        }else if(c == 'white' && b == 'singleLine' && a == 'dottedLine'){
+            color = 'green'; //绿
+        }else if(c == 'white' && b == 'doubleLine' && a == 'fulledLine'){
+            color = 'yellow' // 黄
+        }else if(c == 'white' && b == 'doubleLine' && a == 'dottedLine'){
+            color = 'orange' //橙
+        }else if(c == 'yellow' && b == 'singleLine' && a == 'fulledLine'){
+            color = 'blue'; //蓝
+        }else if(c == 'yellow' && b == 'singleLine' && a == 'dottedLine'){
+            color = 'rgb(60, 119, 21)' //暗紫
+        }else if(c == 'yellow' && b == 'doubleLine' && a == 'dottedLine'){
+            color = 'rgb(105, 235, 19)'; //青
+        }else if (c == 'yellow' && b == 'doubleLine' && a == 'fulledLine') {
+            color = 'rgb(14, 30, 212)' //紫
+        }else if(c == 'unknown' && b == 'doubleLine' && a == 'fulledLine'){
+            color = 'rgb(158, 161, 117)'; //暗黄
+        }else if(c == 'unknown' && b == 'doubleLine' && a == 'dottedLine'){
+            color = 'rgb(16, 214, 208)';//天蓝
+        }else if(c == 'unknown' && b == 'singleLine' && a == 'fulledLine'){
+            color = 'rgb(168, 83, 24)'; //暗红
+        }else if(c == 'unknown' && b == 'singleLine' && a == 'dottedLine'){
+            color ='rgb(31, 31, 36)' //黑
+        }
+        return color;
+    }
+    function loadLineData(){
+        var reader = new FileReader();
+
+        reader.onload = function(e){
+            var ratio = bg_img.getRatio();
+            var data = JSON.parse(e.target.result).data.lines;
+            console.log(data);
+            for(var i = 0; i < data.length - 1; i++){
+                bg_img.lines[i] = new DrawLine(canvas);
+
+                // 获取颜色值
+                var a = data[i].laneStyle;
+                var b = data[i].laneType;
+                var c = data[i].laneColor;
+                var color = setLineColor(a , b, c);
+
+                // 获取坐标值
+                for(var j = 0; j < data[i].points.length; j++){
+                    bg_img.lines[i].points[j] = new DragGraph(data[i].points[j].x, data[i].points[j].y, 0, 0, "rgba(0, 255, 0, 0.7)", canvas, "circle", "#00FF00");
+                }
+
+                bg_img.lines[i].color = color;
+                bg_img.lines[i].fitCanvas(ratio, bg_img.dx, bg_img.dy);   
+
+            }
+            
+            bg_img.erase();
+            bg_img.paint();
+        };
+        for(var i = 0; i < fileInput.files.length; i++){
+            if(fileInput.files[i].name == fileInput.files[file_idx].name + '.txt'){
+                reader.readAsText(fileInput.files[i]);
+            }
+        }
+    }
     // 保存数据
     function saveData() {
 
