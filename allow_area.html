@@ -122,7 +122,6 @@
 		.mark_cancel{
 			background-color: rgba( 235, 203, 23, 0.7);
 		}
-
 	</style>
 </head>
 <body>
@@ -339,7 +338,7 @@
 	                    this.points[i].paint();
 	                }
 	                if (this.mouse) {
-	                    this.mouse.paint;
+	                    this.mouse.paint();
 	                }
 	            }
 	        },
@@ -455,12 +454,14 @@
 	                }
 	            }
 	        },
+
 	        // 重新调整大小
 	        resize: function(mouse, delta) {
 	            this.outlines.forEach(function(o){
 	                o.resize(mouse, delta);
 	            });
 	        },
+
 	        // 获取外围矩形
 	        getBboxWithRealCoordinate: function() {
 	            var top = bg_img.height, bottom = 0, left = bg_img.width, right = 0;
@@ -484,6 +485,7 @@
 	            }
 	            return bbox;
 	        },
+
 	        // 获取物体每个多边形的坐标点
 	        getSegmentationWithRealCoordinate: function() {
 	            var seg = [];
@@ -497,6 +499,7 @@
 	            });
 	            return seg;
 	        },
+
 	        // 计算一个物体总的多边形面积
 	        calcAreaWithRealCoordinate: function() {
 	            var area = 0;
@@ -519,7 +522,7 @@
 	            return (c - bg_img.y) / (bg_img.height) * bg_img.img.height;
 	        }
 	    }
-	    // 图项对象
+	    // 图像对象
 	    DragImage = function(src, canvas) {
 	        this.img = new Image();
 	        this.img.src = src;
@@ -591,20 +594,20 @@
 	        // 调整图像大小使之完全绘制在canvas中
 	        fitCanvas: function() {
 	            var radio = this.getRadio();
-	            if (this.img.width / this.img.height > canvas.width / canvas.height) {               
-	                this.y = (canvas.height - this.height / radio) / 2;
+	            if (this.img.width / this.img.height > this.canvas.width / this.canvas.height) {               
+	                this.y = (this.canvas.height - this.height / radio) / 2;
 	                this.dx = 0;
 	                this.dy = this.y;
 	            } else {
 
-	                this.x = (canvas.width - this.width / radio) / 2;
+	                this.x = (this.canvas.width - this.width / radio) / 2;
 	                this.dx = this.x;
 	                this.dy = 0;
 	            }
 	            this.width = this.width / radio;
 	            this.height = this.height / radio;
 	            this.objects.forEach(function(item){
-	            	item.fitCanvas(radio, dx, dy);
+	            	item.fitCanvas(radio, this.dx, this.dy);
 	            })
 	        },
 	        // 获取要保存的数据
@@ -612,26 +615,28 @@
 	            var json = {};
 	            json.annotation = [];
 	            bg_img.objects.forEach(function(o){
-	                anno = {};
-	                anno.area = o.calcAreaWithRealCoordinate();
-	                var bbox = o.getBboxWithRealCoordinate();
-	                anno.bbox = {};
-	                anno.bbox.x1 = bbox.x;
-	                anno.bbox.y1 = bbox.y;
-	                anno.bbox.w = bbox.w;
-	                anno.bbox.h = bbox.h;
-	                anno.areaType = {};
-   					
-                    var areaTypeValue = o.areaType.split(',');
-                    anno.areaType.id = areaTypeValue[0];
-                    anno.areaType.name = areaTypeValue[1];
-                   
-	                anno.id = '';
-	                anno.type = 1;
-	                anno.image_id = name; 
-	                anno.segmentation = o.getSegmentationWithRealCoordinate();
+	            	if(o.areaType){
+	            		anno = {};
+		                anno.area = o.calcAreaWithRealCoordinate();
+		                var bbox = o.getBboxWithRealCoordinate();
+		                anno.bbox = {};
+		                anno.bbox.x1 = bbox.x;
+		                anno.bbox.y1 = bbox.y;
+		                anno.bbox.w = bbox.w;
+		                anno.bbox.h = bbox.h;
+		                anno.areaType = {};
+	   					
+	                    var areaTypeValue = o.areaType.split(',');
+	                    anno.areaType.id = areaTypeValue[0];
+	                    anno.areaType.name = areaTypeValue[1];
+	                   
+		                anno.id = '';
+		                anno.type = 1;
+		                anno.image_id = name; 
+		                anno.segmentation = o.getSegmentationWithRealCoordinate();
 
-	                json.annotation.push(anno);
+		                json.annotation.push(anno);
+	            	}   
 	            });
 	            json.image = {};
 	            json.image.coco_url = 'images/' + name;
@@ -730,8 +735,11 @@
 				for(var i = 0; i < annotation.length; i++){
 					bg_img.objects[i] = new MarkObject();
 					var areaType = annotation[i].areaType.name;
-					
+					var id = annotation[i].areaType.id;
 					var color = getAreaColor(areaType);
+
+					bg_img.objects[i].color = color;
+					bg_img.objects[i].areaType = id + ',' + areaType;
 
 					for(var j = 0; j < annotation[i].segmentation.length; j++){
 						bg_img.objects[i].outlines[j] = new Outline(canvas, color);
@@ -744,12 +752,9 @@
 					}
 					bg_img.objects[i].fitCanvas(ratio, bg_img.dx, bg_img.dy);
 				}
-				
 				bg_img.erase();
 				bg_img.paint();
 
-
-				console.log(data);
 			}
 
 			for(var i = 0; i < mark_file.files.length; i++){
@@ -758,16 +763,7 @@
 				}
 			}
 		}
-		// <option value="0,allow_area">当前可行驶区域</option>
-		// 		<option value="1,ban_area" >当前不可行驶区域</option>
-		// 		<option value="2,buffer_area">缓冲区</option>
-		// 		<option value="3,stop_area">停止线</option>
-		// 		<option value="4,isolation_area">隔离带</option>
-		// 		<option value="5,walkway_area">步行道</option>
-		// 		<option value="6,crossing_area">人行横道</option>
-		// 红橙黄绿青蓝紫 可行驶 不可行驶 缓冲区 停止线 隔离带 步行道 人行横道
-		// var area_colors = ['rgba(233, 27, 27, 0.5)', 'rgba(	233, 153, 27, 0.5)', 'rgba(	233, 231, 27, 0.5)', 'rgba(	102, 233, 27, 0.5)', 'rgba(	27, 233, 226, 0.5)', 'rgba(	27, 114, 233, 0.5)', 'rgba(	102, 27, 233, 0.5)'];
-		
+		// 获取类型颜色
 		function getAreaColor(type){
 			var color;
 			if(type == 'allow_area'){
@@ -790,10 +786,10 @@
 
 		document.addEventListener('keydown', keyDown);
 		function keyDown(e){
-			e.stopPropagation();
-			e.preventDefault();
+			// e.stopPropagation();
+			// e.preventDefault();
 
-			console.log(e);
+		
 			if(e.keyCode == 27 || e.key == 'Escape'){
 
 			}
@@ -966,7 +962,7 @@
 		}
 		mark_return.on('click', markReturn)
 		function markReturn(e){
-			 if (bg_img.currObject.currOutline) {
+			if (bg_img.currObject.currOutline) {
 	            if (bg_img.currObject.currOutline.mouse) {
 	                bg_img.currObject.currOutline.mouse = null;
 	            }
@@ -983,8 +979,7 @@
 	        drag_state = true;
 
 	        mark_content.slideUp();
-	        mark_start_title.slideDown();
-	       
+	        mark_start_title.slideDown();	       
 		}
 		 // 坐标转换
 	    function windowToCanvas(e, canvas){

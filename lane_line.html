@@ -327,8 +327,6 @@ button{
 			})
 		},
 		resize: function(mouse, delta){
-			var ratio = 1 + delta / 15.0;
-            ratio = ratio > 0 ? ratio : 1;
 			for(var i = 0; i < this.points.length; i++){
 				this.points[i].resize(mouse, delta);
 			}
@@ -579,7 +577,7 @@ button{
     }   
     // 初始化辅助线
     function initAuxiliaryLine(){
-        // 地层canvas绑定MouseMove事件
+        // 底层canvas绑定MouseMove事件
         canvas.addEventListener('mousemove', mouseMoveDrawAssistLine,false);
         
         function mouseMoveDrawAssistLine(e){
@@ -884,6 +882,7 @@ button{
         reader.onload = function(e){
             var ratio = bg_img.getRatio();
             var data = JSON.parse(e.target.result).data.lines;
+
             for(var i = 0; i < data.length - 1; i++){
                 bg_img.lines[i] = new DrawLine(canvas);
 
@@ -892,13 +891,16 @@ button{
                 var b = data[i].laneType;
                 var c = data[i].laneColor;
                 var color = setLineColor(a , b, c);
-
                 // 获取坐标值
                 for(var j = 0; j < data[i].points.length; j++){
                     bg_img.lines[i].points[j] = new DragGraph(data[i].points[j].x, data[i].points[j].y, 0, 0, "rgba(0, 255, 0, 0.7)", canvas, "circle", "#00FF00");
                 }
 
                 bg_img.lines[i].color = color;
+                bg_img.lines[i].laneStyle = data[i].laneStyle;
+                bg_img.lines[i].laneType = data[i].laneType;
+                bg_img.lines[i].laneColor = data[i].laneColor;
+
                 bg_img.lines[i].fitCanvas(ratio, bg_img.dx, bg_img.dy);   
 
             }

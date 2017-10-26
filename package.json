@@ -1,0 +1,19 @@
+{
+  "name": "mark",
+  "version": "1.0.0",
+  "description": "",
+  "main": "LMCanvas.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GridGit/mark_allowArea_line_roadLiaght.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/GridGit/mark_allowArea_line_roadLiaght/issues"
+  },
+  "homepage": "https://github.com/GridGit/mark_allowArea_line_roadLiaght#readme"
+}

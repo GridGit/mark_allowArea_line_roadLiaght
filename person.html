@@ -190,7 +190,10 @@ button{
         black_light_but = document.getElementById('black_light'),
 
         del_but = document.getElementById("del_last"),
-        draw_state = false;
+        draw_state = false,
+        editing = false,
+        selectedRectIndex = -1;
+
 
     DragRect = function(left, top, right, bottom, canvas, color ) {
         this.left = left;
@@ -478,21 +481,18 @@ button{
         var reader = new FileReader();
         reader.onload = function(e){
             var ratio = bg_img.getRatio();    
-            
-            var data = JSON.parse(e.target.result).data;
-
+            var data = JSON.parse(e.target.result).data;  
             for(var name in data){
                 if(data[name].length != 0){
                     var color = getRectColor(name);
-                    for(var j = 0; j < data[name].length; j++){
-                        
-                        // DragRect = function(left, top, right, bottom, canvas, color );
+                    var type = getRectType(name);
+                    for(var j = 0; j < data[name].length; j++){ 
                         var d = data[name][j];
-                        console.log(d);
-
                         var rect = new DragRect(d.left, d.top, d.right, d.bottom, canvas);
                         rect.fitCanvas(ratio, bg_img.x, bg_img.y);
                         rect.color = color;
+                        rect.type = type;
+                        rect.name = name;
                         bg_img.rects.push(rect);
                     }
                 }
@@ -506,8 +506,62 @@ button{
             }
         }
     }
+    // 获取rect颜色值
+    // 
+    function getRectColor(name){
+        var color;
 
+        if(name == 'person'){
+            color = 'rgb(255, 0, 0)';
+        }else if(name == 'car'){
+            color = 'rgb(0, 255, 0)';
+        }else if(name == 'bicycle'){
+            color = 'rgb(47, 18, 168)';
+        }else if(name == 'motorbike'){
+            color = 'rgb(0, 0, 255)';
+        }else if(name == 'rickshaw'){
+            color = 'rgb(197, 142, 40)'
+        }else if(name == 'electroTricycle'){
+            color = 'rgb(36, 190, 48)';
+        }else if(name =='redLight'){
+            color = 'rgb(255, 0, 0)';
+        }else if(name == 'greenLight'){
+            color = 'rgb(0, 255, 0)';
+        }else if(name == 'yellowLight'){
+            color = 'rgb(239, 221, 13)';
+        }else if(name == 'blackLight'){
+            color = 'rgb(10, 10, 10)';
+        }
 
+        return color;
+    }
+
+    // 获取rect type
+    function getRectType(name){
+        var type;
+        if(name == 'person'){
+            type = 0;
+        }else if(name == 'car'){
+            type = 1;
+        }else if(name == 'bicycle'){
+            type = 2;
+        }else if(name == 'motorbike'){
+            type = 3;
+        }else if(name == 'rickshaw'){
+            type = 4;
+        }else if(name == 'electroTricycle'){
+            type = 5;
+        }else if(name == 'redLight'){
+            type = 6;
+        }else if(name == 'greenLight'){
+            type = 7;
+        }else if(name == 'yellowLight'){
+            type = 8;
+        }else if(name == 'blackLight'){
+            type = 9;
+        }
+        return type;
+    }
     // 人 红
     draw_person_but.onclick = function (e) {
         draw_state = true;
@@ -593,34 +647,7 @@ button{
         bg_img.paint();
     }
 
-    function getRectColor(name){
-        var color;
-
-        if(name == 'person'){
-            color = 'rgb(255, 0, 0)';
-        }else if(name == 'car'){
-            color = 'rgb(0, 255, 0)';
-        }else if(name == 'bicycle'){
-            color = 'rgb(47, 18, 168)';
-        }else if(name == 'motorbike'){
-            color = 'rgb(0, 0, 255)';
-        }else if(name = 'rickshaw'){
-            color = 'rgb(197, 142, 40)'
-        }else if(name = 'electroTricycle'){
-            color = 'rgb(36, 190, 48)';
-        }else if(name = 'redLight'){
-            color = 'rgb(255, 0, 0)';
-        }else if(name = 'greenLight'){
-            color = 'rgb(0, 255, 0)';
-        }else if(name = 'yellowLight'){
-            color = 'rgb(239, 221, 13)';
-        }else if(name = 'blackLight'){
-            color = 'rgb(10, 10, 10)';
-        }
-
-        return color;
-    }
-
+   
     
     // 添加辅助线
     canvas.addEventListener('mousemove', mouseMoveDrawAssistLine,false);
@@ -670,16 +697,38 @@ button{
         return false;
     }
 
+    document.addEventListener('keydown', keyDown);
+
+    function keyDown(e){
+        // e.stopPropagation();
+        // e.preventDefault();
+
+        if(e.keyCode == '69' || e.key == 'e'){
+            editing = true; 
+        }
+    }
+
+    document.addEventListener('keyup', keyUp);
+    function keyUp(e){
+        if(e.keyCode == '69' || e.key == 'e'){
+            editing = false;
+        }
+    }
+
+    function windowToCanvas(e, canvas){
+        return {
+            x : e.clientX - canvas.getBoundingClientRect().left,
+            y : e.clientY - canvas.getBoundingClientRect().top
+        }
+    }
     canvas.addEventListener( "mousedown" , mouseDownOperate, false);
     function mouseDownOperate(e){
         e.stopPropagation();
         e.preventDefault();
-  
-        var mouse = {
-            x : e.clientX - canvas.getBoundingClientRect().left,
-            y : e.clientY - canvas.getBoundingClientRect().top
-        };
-        if(bg_img.isMouseInImage(mouse)){
+        // 转换坐标
+        var mouse = windowToCanvas(e, canvas);
+
+        if(bg_img && bg_img.isMouseInImage(mouse)){
             if (e.button == 2) {
                 var mouse = {
                     x : e.clientX - canvas.getBoundingClientRect().left,
@@ -742,7 +791,10 @@ button{
                         canvas.removeEventListener("mousemove", img_ld_move, false);
                     }, false);
                 }
-            }else if(e.button == 0){
+            }else if(e.button == 0 && editing == false){
+
+                // console.log(e.button);
+
                 bg_img.currRect = new DragRect(
                 e.clientX - canvas.getBoundingClientRect().left,
                 e.clientY - canvas.getBoundingClientRect().top,
@@ -783,6 +835,21 @@ button{
                 canvas.addEventListener("mouseout", function(e) {
                     canvas.removeEventListener("mousemove", point_move, false);
                 }, false);
+            } else if(e.button == 0 && editing == true){
+
+                for(var i = 0; i < bg_img.rects.length; i++){
+                    if(bg_img.rects[i].isMouseInRect(mouse)){
+                        
+                        bg_img.rects.forEach(function(item){
+                            item.selected = false;
+                        });
+
+                        bg_img.rects[i].selected = true;
+                        selectedRectIndex = i;
+                    }
+                }
+                bg_img.erase();
+                bg_img.paint();
             }
         }  
     }
